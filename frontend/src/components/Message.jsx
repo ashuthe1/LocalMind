@@ -1,4 +1,3 @@
-// src/components/Message.jsx
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -56,6 +55,9 @@ const Message = ({ message, darkMode }) => {
   return (
     <div className={`message ${message.role} ${darkMode ? 'dark' : 'light'}`}>
       {renderContent()}
+      <div className="timestamp">
+        {new Date(message.createdAt).toLocaleTimeString()}
+      </div>
     </div>
   );
 };

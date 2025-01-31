@@ -1,5 +1,4 @@
-// src/App.jsx
-import { useState, useEffect, createContext } from 'react';
+import { useState, useEffect, createContext, useRef } from 'react';
 import { ThemeProvider, createTheme, CssBaseline, IconButton } from '@mui/material';
 import { Brightness4, Brightness7 } from '@mui/icons-material';
 import { api } from './services/api';
@@ -15,6 +14,8 @@ function App() {
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
+  const [isAIResponding, setIsAIResponding] = useState(false);
+  const messagesEndRef = useRef(null);
 
   const theme = createTheme({
     palette: {
@@ -28,14 +29,17 @@ function App() {
     },
   });
 
-  // Add all handler functions properly
-  const toggleTheme = () => {
-    setDarkMode(!darkMode);
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   useEffect(() => {
     fetchChats();
   }, []);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [selectedChat?.messages, isAIResponding]);
 
   const fetchChats = async () => {
     try {
@@ -51,6 +55,7 @@ function App() {
     if (!message.trim()) return;
 
     setLoading(true);
+    setIsAIResponding(true);
     try {
       await api.sendMessage(message, selectedChat?._id);
       setMessage('');
@@ -59,6 +64,7 @@ function App() {
       console.error('Error sending message:', error);
     }
     setLoading(false);
+    setIsAIResponding(false);
   };
 
   const handleDeleteChat = async (chatId) => {
@@ -85,6 +91,10 @@ function App() {
     }
   };
 
+  const toggleTheme = () => {
+    setDarkMode(!darkMode);
+  };
+
   return (
     <ThemeContext.Provider value={{ toggleTheme }}>
       <ThemeProvider theme={theme}>
@@ -101,7 +111,7 @@ function App() {
             <ChatList
               chats={chats}
               onSelectChat={setSelectedChat}
-              onDeleteChat={handleDeleteChat} // Now properly bound
+              onDeleteChat={handleDeleteChat}
               onDeleteAllChats={handleDeleteAllChats}
               selectedChatId={selectedChat?._id}
               darkMode={darkMode}
@@ -112,6 +122,15 @@ function App() {
                 {selectedChat?.messages.map((message, index) => (
                   <Message key={index} message={message} darkMode={darkMode} />
                 ))}
+                
+                {isAIResponding && (
+                  <div className="typing-indicator">
+                    <div className="dot"></div>
+                    <div className="dot"></div>
+                    <div className="dot"></div>
+                  </div>
+                )}
+                <div ref={messagesEndRef} />
               </div>
               
               <form onSubmit={handleSendMessage} className="message-form">
@@ -119,6 +138,11 @@ function App() {
                   type="text"
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.ctrlKey && e.key === 'Enter') {
+                      handleSendMessage(e);
+                    }
+                  }}
                   placeholder="Type your message..."
                   disabled={loading}
                   className="message-input"
