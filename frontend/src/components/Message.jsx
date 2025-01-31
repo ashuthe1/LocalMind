@@ -6,6 +6,21 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { materialDark, materialLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import '../styles/Message.css';
 
+const formatTimestamp = (timestamp) => {
+  try {
+    const date = new Date(timestamp);
+    if (isNaN(date.getTime())) return null;
+    
+    return date.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
+  } catch {
+    return null;
+  }
+};
+
 const Message = ({ message, darkMode }) => {
   const renderContent = () => {
     if (message.role === 'assistant') {
@@ -52,12 +67,16 @@ const Message = ({ message, darkMode }) => {
     return message.content;
   };
 
+  const timestamp = formatTimestamp(message.timestamp);
+
   return (
     <div className={`message ${message.role} ${darkMode ? 'dark' : 'light'}`}>
       {renderContent()}
-      <div className="timestamp">
-        {new Date(message.createdAt).toLocaleTimeString()}
-      </div>
+      {timestamp && (
+        <div className="timestamp">
+          {timestamp}
+        </div>
+      )}
     </div>
   );
 };

@@ -16,6 +16,7 @@ function App() {
   const [darkMode, setDarkMode] = useState(false);
   const [isAIResponding, setIsAIResponding] = useState(false);
   const messagesEndRef = useRef(null);
+  const [selectedChatId, setSelectedChatId] = useState(null);
 
   const theme = createTheme({
     palette: {
@@ -41,10 +42,14 @@ function App() {
     scrollToBottom();
   }, [selectedChat?.messages, isAIResponding]);
 
+  // Update fetchChats to set initial selected chat
   const fetchChats = async () => {
     try {
       const chats = await api.getChats();
       setChats(chats);
+      if (!selectedChatId && chats.length > 0) {
+        setSelectedChatId(chats[0].id);
+      }
     } catch (error) {
       console.error('Error fetching chats:', error);
     }
@@ -57,7 +62,7 @@ function App() {
     setLoading(true);
     setIsAIResponding(true);
     try {
-      await api.sendMessage(message, selectedChat?._id);
+      await api.sendMessage(message, selectedChatId);
       setMessage('');
       await fetchChats();
     } catch (error) {
@@ -110,10 +115,10 @@ function App() {
           <div className="main-container">
             <ChatList
               chats={chats}
-              onSelectChat={setSelectedChat}
+              onSelectChat={(chat) => setSelectedChatId(chat.id)}
               onDeleteChat={handleDeleteChat}
               onDeleteAllChats={handleDeleteAllChats}
-              selectedChatId={selectedChat?._id}
+              selectedChatId={selectedChatId}
               darkMode={darkMode}
             />
             

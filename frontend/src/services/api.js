@@ -5,11 +5,10 @@ const API_BASE_URL = '/api';
 
 export const api = {
   async sendMessage(message, chatId) {
-    const response = await axios.post(`${API_BASE_URL}/chat`, {
-      message,
-      chatId,
-      model: "deepseek"
-    });
+    const requestBody = { message, model: "deepseek" };
+    if (chatId) requestBody.chatId = chatId;
+    
+    const response = await axios.post(`${API_BASE_URL}/chat`, requestBody);
     return response.data;
   },
 
