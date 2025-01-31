@@ -10,23 +10,18 @@ export const ThemeContext = createContext({ toggleTheme: () => {} });
 
 function App() {
   const [chats, setChats] = useState([]);
-  const [selectedChat, setSelectedChat] = useState(null);
+  const [selectedChatId, setSelectedChatId] = useState(null);
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
   const [isAIResponding, setIsAIResponding] = useState(false);
   const messagesEndRef = useRef(null);
-  const [selectedChatId, setSelectedChatId] = useState(null);
 
   const theme = createTheme({
     palette: {
       mode: darkMode ? 'dark' : 'light',
-      primary: {
-        main: '#3f51b5',
-      },
-      secondary: {
-        main: '#f50057',
-      },
+      primary: { main: '#3f51b5' },
+      secondary: { main: '#f50057' },
     },
   });
 
@@ -40,9 +35,8 @@ function App() {
 
   useEffect(() => {
     scrollToBottom();
-  }, [selectedChat?.messages, isAIResponding]);
+  }, [selectedChatId, isAIResponding]);
 
-  // Update fetchChats to set initial selected chat
   const fetchChats = async () => {
     try {
       const chats = await api.getChats();
@@ -75,9 +69,7 @@ function App() {
   const handleDeleteChat = async (chatId) => {
     try {
       await api.deleteChat(chatId);
-      if (selectedChat?._id === chatId) {
-        setSelectedChat(null);
-      }
+      if (selectedChatId === chatId) setSelectedChatId(null);
       await fetchChats();
     } catch (error) {
       console.error('Error deleting chat:', error);
@@ -85,20 +77,19 @@ function App() {
   };
 
   const handleDeleteAllChats = async () => {
-    if (!window.confirm('Are you sure you want to delete all chats?')) return;
-    
+    if (!window.confirm('Are you sure?')) return;
     try {
       await api.deleteAllChats();
-      setSelectedChat(null);
+      setSelectedChatId(null);
       await fetchChats();
     } catch (error) {
       console.error('Error deleting all chats:', error);
     }
   };
 
-  const toggleTheme = () => {
-    setDarkMode(!darkMode);
-  };
+  const toggleTheme = () => setDarkMode(!darkMode);
+
+  const activeChat = chats.find(chat => chat.id === selectedChatId);
 
   return (
     <ThemeContext.Provider value={{ toggleTheme }}>
@@ -124,7 +115,7 @@ function App() {
             
             <div className="chat-container">
               <div className="messages-container">
-                {selectedChat?.messages.map((message, index) => (
+                {activeChat?.messages?.map((message, index) => (
                   <Message key={index} message={message} darkMode={darkMode} />
                 ))}
                 
@@ -143,11 +134,7 @@ function App() {
                   type="text"
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.ctrlKey && e.key === 'Enter') {
-                      handleSendMessage(e);
-                    }
-                  }}
+                  onKeyDown={(e) => e.ctrlKey && e.key === 'Enter' && handleSendMessage(e)}
                   placeholder="Type your message..."
                   disabled={loading}
                   className="message-input"

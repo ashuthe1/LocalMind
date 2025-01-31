@@ -1,16 +1,37 @@
+.chat-list {
+  width: 280px;
+  min-width: 250px;
+  border-right: 1px solid var(--border-color);
+  padding: 1rem;
+  overflow-y: auto;
+  background: var(--bg-color);
+  z-index: 1;
+}
+
 .chat-list.dark {
   background-color: #2d2d2d;
-  border-right: 1px solid #444;
 }
 
-.chat-item.dark {
-  background-color: #333;
+.delete-all-button {
+  margin-bottom: 1rem;
+  width: 100%;
 }
 
-.chat-item.selected.dark {
-  background-color: #3f51b5;
+.chat-item {
+  padding: 0.8rem;
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+  cursor: pointer;
+  transition: background 0.2s;
+  background: var(--bg-color) !important;
+  color: var(--text-color);
 }
 
-.chat-item:hover.dark {
-  background-color: #444;
+.chat-item:hover {
+  background: var(--input-bg) !important;
+}
+
+.chat-item.selected {
+  background: var(--primary-color) !important;
+  color: white !important;
 }

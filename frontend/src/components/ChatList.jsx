@@ -3,21 +3,19 @@ import { List, ListItem, ListItemText, IconButton, Button } from '@mui/material'
 import DeleteIcon from '@mui/icons-material/Delete';
 import '../styles/ChatList.css';
 
-const isValidDate = (dateString) => {
-  const date = new Date(dateString);
-  return !isNaN(date) && date.getFullYear() > 1;
-};
-
-const formatChatDate = (dateString) => {
-  if (!isValidDate(dateString)) return 'New Chat';
-  
-  const date = new Date(dateString);
-  return date.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
+const formatDate = (dateString) => {
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date) || date.getFullYear() <= 1) return 'New Chat';
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  } catch {
+    return 'New Chat';
+  }
 };
 
 const ChatList = ({ chats, onSelectChat, onDeleteChat, onDeleteAllChats, selectedChatId, darkMode }) => {
@@ -53,7 +51,8 @@ const ChatList = ({ chats, onSelectChat, onDeleteChat, onDeleteAllChats, selecte
             onClick={() => onSelectChat(chat)}
           >
             <ListItemText
-              primary={formatChatDate(chat.createdAt)}
+              primary={formatDate(chat.createdAt)}
+              secondary={`${chat.messages?.length || 0} messages`}
               primaryTypographyProps={{
                 style: {
                   fontWeight: selectedChatId === chat.id ? '600' : '400',
@@ -61,7 +60,6 @@ const ChatList = ({ chats, onSelectChat, onDeleteChat, onDeleteAllChats, selecte
                   fontSize: '0.9rem'
                 }
               }}
-              secondary={chat.title !== 'New Chat' ? chat.title : ''}
               secondaryTypographyProps={{
                 style: {
                   color: darkMode ? '#aaa' : '#666',

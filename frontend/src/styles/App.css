@@ -71,7 +71,6 @@
   cursor: not-allowed;
 }
 
-/* Dark/Light mode variables */
 :root {
   --bg-color: #ffffff;
   --header-bg: #f8f9fa;

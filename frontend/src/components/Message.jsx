@@ -11,16 +11,6 @@ const isValidTimestamp = (timestamp) => {
   return !isNaN(date) && date.getFullYear() > 1;
 };
 
-const formatTimestamp = (timestamp) => {
-  if (!isValidTimestamp(timestamp)) return null;
-  
-  return new Date(timestamp).toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true
-  });
-};
-
 const Message = ({ message, darkMode }) => {
   const renderContent = () => {
     if (message.role === 'assistant') {
@@ -67,16 +57,14 @@ const Message = ({ message, darkMode }) => {
     return message.content;
   };
 
-  const timestamp = formatTimestamp(message.timestamp);
+  const timestamp = isValidTimestamp(message.timestamp)
+    ? new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    : null;
 
   return (
     <div className={`message ${message.role} ${darkMode ? 'dark' : 'light'}`}>
       {renderContent()}
-      {timestamp && (
-        <div className="timestamp">
-          {timestamp}
-        </div>
-      )}
+      {timestamp && <div className="timestamp">{timestamp}</div>}
     </div>
   );
 };
