@@ -13,11 +13,14 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+var ModelName string
+
 // Config holds the configuration values.
 type Config struct {
 	ServerAddress string
 	MongoURI      string
 	DatabaseName  string
+	ModelName     string
 }
 
 // LoadConfig loads configuration from a .env file if present,
@@ -29,10 +32,13 @@ func LoadConfig() *Config {
 		log.Println("No .env file found or failed to load it. Continuing with environment variables or defaults.")
 	}
 
+	ModelName = getEnv("MODEL_NAME", "deepseek-r1:8b")
+
 	return &Config{
 		ServerAddress: getEnv("SERVER_ADDRESS", ":8080"),
 		MongoURI:      getEnv("MONGO_URI", "mongodb://localhost:27017"),
 		DatabaseName:  getEnv("DATABASE_NAME", "ollama_db"),
+		ModelName:     getEnv("MODEL_NAME", "deepseek-r1:8b"),
 	}
 }
 

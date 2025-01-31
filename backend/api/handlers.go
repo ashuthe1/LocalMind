@@ -3,11 +3,12 @@
 package api
 
 import (
-	"github.com/ashuthe1/localmind/models"
-	"github.com/ashuthe1/localmind/services"
 	"encoding/json"
 	"net/http"
 
+	"github.com/ashuthe1/localmind/config"
+	"github.com/ashuthe1/localmind/models"
+	"github.com/ashuthe1/localmind/services"
 	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -30,7 +31,6 @@ func (h *Handler) SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Message string `json:"message"`
 		ChatID  string `json:"chatId,omitempty"`
-		Model   string `json:"model"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
@@ -38,8 +38,8 @@ func (h *Handler) SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Validate input
-	if req.Message == "" || req.Model == "" {
-		http.Error(w, "Message and model are required", http.StatusBadRequest)
+	if req.Message == "" {
+		http.Error(w, "User Prompt is required", http.StatusBadRequest)
 		return
 	}
 
@@ -73,7 +73,7 @@ func (h *Handler) SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Generate response from Ollama LLM
-	response, err := h.OllamaService.GenerateResponse(req.Message, req.Model)
+	response, err := h.OllamaService.GenerateResponse(req.Message, config.ModelName)
 	if err != nil {
 		http.Error(w, "Failed to generate response from LLM", http.StatusInternalServerError)
 		return
