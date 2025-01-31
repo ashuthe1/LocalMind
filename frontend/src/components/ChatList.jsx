@@ -3,20 +3,21 @@ import { List, ListItem, ListItemText, IconButton, Button } from '@mui/material'
 import DeleteIcon from '@mui/icons-material/Delete';
 import '../styles/ChatList.css';
 
+const isValidDate = (dateString) => {
+  const date = new Date(dateString);
+  return !isNaN(date) && date.getFullYear() > 1;
+};
+
 const formatChatDate = (dateString) => {
-  try {
-    const date = new Date(dateString);
-    if (isNaN(date)) return 'New Chat';
-    
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  } catch {
-    return 'New Chat';
-  }
+  if (!isValidDate(dateString)) return 'New Chat';
+  
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
 };
 
 const ChatList = ({ chats, onSelectChat, onDeleteChat, onDeleteAllChats, selectedChatId, darkMode }) => {

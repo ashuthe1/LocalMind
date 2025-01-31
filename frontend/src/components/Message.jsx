@@ -6,19 +6,19 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { materialDark, materialLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import '../styles/Message.css';
 
+const isValidTimestamp = (timestamp) => {
+  const date = new Date(timestamp);
+  return !isNaN(date) && date.getFullYear() > 1;
+};
+
 const formatTimestamp = (timestamp) => {
-  try {
-    const date = new Date(timestamp);
-    if (isNaN(date.getTime())) return null;
-    
-    return date.toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
-    });
-  } catch {
-    return null;
-  }
+  if (!isValidTimestamp(timestamp)) return null;
+  
+  return new Date(timestamp).toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  });
 };
 
 const Message = ({ message, darkMode }) => {
