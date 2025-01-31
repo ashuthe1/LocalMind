@@ -1,58 +1,32 @@
 /* src/styles/ChatList.css */
 .chat-list {
-    width: 250px;
-    background-color: #f8f9fa;
-    height: 100vh;
-    padding: 20px;
-    overflow-y: auto;
-  }
-  
-  .chat-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px;
-    margin: 5px 0;
-    border-radius: 4px;
-    cursor: pointer;
-    background-color: white;
-  }
-  
-  .chat-item:hover {
-    background-color: #e9ecef;
-  }
-  
-  .chat-item.selected {
-    background-color: #e3f2fd;
-  }
-  
-  .chat-title {
-    flex: 1;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  
-  .delete-button {
-    background: none;
-    border: none;
-    color: #dc3545;
-    font-size: 20px;
-    cursor: pointer;
-    padding: 0 5px;
-  }
-  
-  .delete-all-button {
-    width: 100%;
-    padding: 10px;
-    background-color: #dc3545;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    margin-bottom: 20px;
-  }
-  
-  .delete-all-button:hover {
-    background-color: #c82333;
-  }
+  width: 280px;
+  border-right: 1px solid var(--border-color);
+  padding: 1rem;
+  overflow-y: auto;
+  background: var(--bg-color);
+}
+
+.delete-all-button {
+  margin-bottom: 1rem;
+  width: 100%;
+}
+
+.chat-item {
+  padding: 0.8rem;
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+  cursor: pointer;
+  transition: background 0.2s;
+  background: var(--bg-color);
+  color: var(--text-color);
+}
+
+.chat-item:hover {
+  background: var(--input-bg);
+}
+
+.chat-item.selected {
+  background: var(--primary-color);
+  color: white;
+}

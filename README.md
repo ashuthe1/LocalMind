@@ -6,8 +6,7 @@
    curl -X POST http://localhost:8080/api/chat \
         -H "Content-Type: application/json" \
         -d '{
-              "message": "What is the weather today?",
-              "model": "deepseek"
+              "message": "What is the weather today?"
             }'
    ```
 
@@ -20,8 +19,7 @@
         -H "Content-Type: application/json" \
         -d '{
               "message": "Will it rain tomorrow?",
-              "chatId": "YOUR_CHAT_ID",
-              "model": "deepseek"
+              "chatId": "YOUR_CHAT_ID"
             }'
    ```
 
