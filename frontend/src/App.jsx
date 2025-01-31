@@ -1,6 +1,6 @@
 import { useState, useEffect, createContext, useRef } from 'react';
-import { ThemeProvider, createTheme, CssBaseline, IconButton } from '@mui/material';
-import { Brightness4, Brightness7 } from '@mui/icons-material';
+import { ThemeProvider, createTheme, CssBaseline, IconButton, Fab } from '@mui/material';
+import { Brightness4, Brightness7, Add, Send } from '@mui/icons-material';
 import { api } from './services/api';
 import ChatList from './components/ChatList';
 import Message from './components/Message';
@@ -13,7 +13,10 @@ function App() {
   const [selectedChatId, setSelectedChatId] = useState(null);
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(() => {
+    const savedTheme = localStorage.getItem('theme');
+    return savedTheme ? JSON.parse(savedTheme) : true;
+  });
   const [isAIResponding, setIsAIResponding] = useState(false);
   const messagesEndRef = useRef(null);
 
@@ -24,6 +27,12 @@ function App() {
       secondary: { main: '#f50057' },
     },
   });
+
+  const toggleTheme = () => {
+    const newMode = !darkMode;
+    setDarkMode(newMode);
+    localStorage.setItem('theme', JSON.stringify(newMode));
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -77,7 +86,7 @@ function App() {
   };
 
   const handleDeleteAllChats = async () => {
-    if (!window.confirm('Are you sure?')) return;
+    if (!window.confirm('Are you sure you want to delete all chats?')) return;
     try {
       await api.deleteAllChats();
       setSelectedChatId(null);
@@ -87,8 +96,6 @@ function App() {
     }
   };
 
-  const toggleTheme = () => setDarkMode(!darkMode);
-
   const activeChat = chats.find(chat => chat.id === selectedChatId);
 
   return (
@@ -96,6 +103,17 @@ function App() {
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <div className={`app ${darkMode ? 'dark' : 'light'}`}>
+          <Fab
+            color="primary"
+            className="floating-new-chat"
+            onClick={() => {
+              setSelectedChatId(null);
+              setMessage('');
+            }}
+          >
+            <Add />
+          </Fab>
+
           <header className="app-header">
             <h1>DeepSeek Chat</h1>
             <IconButton onClick={toggleTheme} color="inherit">
@@ -144,7 +162,7 @@ function App() {
                   disabled={loading || !message.trim()}
                   className="send-button"
                 >
-                  {loading ? '✈️ Sending...' : '🚀 Send'}
+                  <Send fontSize="small" /> {loading ? 'Sending...' : 'Send'}
                 </button>
               </form>
             </div>

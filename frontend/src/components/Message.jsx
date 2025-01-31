@@ -63,6 +63,9 @@ const Message = ({ message, darkMode }) => {
 
   return (
     <div className={`message ${message.role} ${darkMode ? 'dark' : 'light'}`}>
+      <span className="message-icon">
+        {message.role === 'user' ? '👤' : '🤖'}
+      </span>
       {renderContent()}
       {timestamp && <div className="timestamp">{timestamp}</div>}
     </div>

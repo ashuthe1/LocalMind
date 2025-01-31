@@ -19,6 +19,7 @@
   display: flex;
   flex: 1;
   overflow: hidden;
+  position: relative;
 }
 
 .chat-container {
@@ -47,28 +48,56 @@
 
 .message-input {
   flex: 1;
-  padding: 0.8rem;
-  border-radius: 8px;
+  padding: 0.8rem 0.8rem 0.8rem 40px;
+  border-radius: 25px;
   border: 1px solid var(--border-color);
   background: var(--input-bg);
   color: var(--text-color);
   font-size: 1rem;
+  transition: all 0.3s ease;
+  background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23999999"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg>');
+  background-repeat: no-repeat;
+  background-position: 12px center;
+  background-size: 20px;
+}
+
+.dark .message-input {
+  background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23ffffff"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg>');
+}
+
+.message-input:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(63, 81, 181, 0.2);
 }
 
 .send-button {
   padding: 0.8rem 1.5rem;
-  border-radius: 8px;
+  border-radius: 25px;
   border: none;
   background: var(--primary-color);
   color: white;
   cursor: pointer;
-  transition: opacity 0.2s;
-  font-size: 1rem;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .send-button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.floating-new-chat {
+  position: fixed !important;
+  bottom: 30px;
+  left: 300px;
+  z-index: 1000;
+  transition: transform 0.3s ease !important;
+}
+
+.floating-new-chat:hover {
+  transform: scale(1.1) !important;
 }
 
 :root {

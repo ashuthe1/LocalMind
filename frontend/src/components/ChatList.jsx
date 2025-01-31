@@ -1,6 +1,6 @@
 import React from 'react';
 import { List, ListItem, ListItemText, IconButton, Button } from '@mui/material';
-import DeleteIcon from '@mui/icons-material/Delete';
+import { Add, Delete, History, Bookmark } from '@mui/icons-material';
 import '../styles/ChatList.css';
 
 const formatDate = (dateString) => {
@@ -21,12 +21,26 @@ const formatDate = (dateString) => {
 const ChatList = ({ chats, onSelectChat, onDeleteChat, onDeleteAllChats, selectedChatId, darkMode }) => {
   return (
     <div className={`chat-list ${darkMode ? 'dark' : 'light'}`}>
+      <div className="sidebar-header">
+        <History fontSize="small" />
+        <h3>Chat History</h3>
+      </div>
+
       <Button
         variant="contained"
+        startIcon={<Add />}
+        className="new-chat-sidebar"
+        onClick={() => onSelectChat(null)}
+      >
+        New Chat
+      </Button>
+
+      <Button
+        variant="outlined"
         color="secondary"
         onClick={onDeleteAllChats}
         className="delete-all-button"
-        startIcon={<DeleteIcon />}
+        startIcon={<Delete />}
       >
         Clear History
       </Button>
@@ -45,13 +59,18 @@ const ChatList = ({ chats, onSelectChat, onDeleteChat, onDeleteAllChats, selecte
                 }}
                 color="inherit"
               >
-                <DeleteIcon fontSize="small" />
+                <Delete fontSize="small" />
               </IconButton>
             }
             onClick={() => onSelectChat(chat)}
           >
             <ListItemText
-              primary={formatDate(chat.createdAt)}
+              primary={
+                <div className="chat-title">
+                  {selectedChatId === chat.id && <Bookmark fontSize="small" />}
+                  {formatDate(chat.createdAt)}
+                </div>
+              }
               secondary={`${chat.messages?.length || 0} messages`}
               primaryTypographyProps={{
                 style: {
