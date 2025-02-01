@@ -150,7 +150,7 @@ function App() {
           </Fab>
 
           <header className="app-header">
-            <h1>DeepSeek Chat</h1>
+            <h1>LocalMind✨</h1>
             <IconButton onClick={toggleTheme} color="inherit">
               {darkMode ? <Brightness7 /> : <Brightness4 />}
             </IconButton>
@@ -164,6 +164,8 @@ function App() {
               onDeleteAllChats={handleDeleteAllChats}
               selectedChatId={selectedChatId}
               darkMode={darkMode}
+              setSelectedChatId={setSelectedChatId}
+              setMessage={setMessage}
             />
             
             <div className="chat-container">

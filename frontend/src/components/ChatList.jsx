@@ -19,7 +19,7 @@ const formatDate = (dateString) => {
   }
 };
 
-const ChatList = ({ chats, onSelectChat, onDeleteChat, onDeleteAllChats, selectedChatId, darkMode }) => {
+const ChatList = ({ chats, onSelectChat, onDeleteChat, onDeleteAllChats, selectedChatId, darkMode, setSelectedChatId, setMessage }) => {
   return (
     <div className={`chat-list ${darkMode ? 'dark' : 'light'}`}>
       <div className="sidebar-header">
@@ -31,7 +31,10 @@ const ChatList = ({ chats, onSelectChat, onDeleteChat, onDeleteAllChats, selecte
         variant="contained"
         startIcon={<Add />}
         className="new-chat-sidebar"
-        onClick={() => onSelectChat(null)}
+        onClick={() => {
+          setSelectedChatId(null);
+          setMessage('');
+        }}
       >
         New Chat
       </Button>
