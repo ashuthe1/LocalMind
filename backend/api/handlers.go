@@ -4,6 +4,7 @@ package api
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"time"
 
@@ -90,12 +91,11 @@ func (h *Handler) SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Define a callback function to send each chunk as an SSE event.
 	sendChunk := func(chunk string) error {
-		// Write the chunk as an SSE data event.
 		_, err := w.Write([]byte("data: " + chunk + "\n\n"))
 		if err != nil {
-			return err
+			log.Println("Client disconnected, stopping SSE stream...")
+			return err // Exit the streaming function
 		}
-		assistantResponse += chunk
 		flusher.Flush()
 		return nil
 	}
@@ -141,6 +141,7 @@ func (h *Handler) SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 		Timestamp: time.Now(),
 	}
 	if err := h.ChatService.AddMessage(chatID, assistantMessage); err != nil {
+		log.Println("Some error in Adding Message Backend")
 		// Log the error if needed, but the client already received the stream.
 	}
 
@@ -148,7 +149,6 @@ func (h *Handler) SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write([]byte("event: complete\ndata: done\n\n"))
 	flusher.Flush()
 }
-
 
 // GetChatsHandler retrieves all chats.
 func (h *Handler) GetChatsHandler(w http.ResponseWriter, r *http.Request) {
