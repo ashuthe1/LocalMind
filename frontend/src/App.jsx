@@ -174,20 +174,26 @@ function App() {
                   )}
                   <div ref={messagesEndRef} />
                 </div>
+
                 <form onSubmit={handleSendMessage} className="message-form">
-                  <input
-                    type="text"
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    onKeyDown={(e) => e.ctrlKey && e.key === 'Enter' && handleSendMessage(e)}
-                    placeholder="Type your message..."
-                    disabled={loading}
-                    className="message-input"
-                  />
-                  <button type="submit" disabled={loading || !message.trim()} className="send-button">
-                    <Send fontSize="small" /> {loading ? 'Generating...' : 'Send'}
-                  </button>
-                </form>
+                <input
+                  type="text"
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  onKeyDown={(e) => e.ctrlKey && e.key === 'Enter' && handleSendMessage(e)}
+                  placeholder="Type your message..."
+                  disabled={loading}
+                  className="message-input"
+                />
+                <button
+                  type="submit"
+                  disabled={loading || !message.trim()}
+                  className="send-button"
+                >
+                  <Send fontSize="small" /> {loading ? 'Generating...' : 'Send'}
+                </button>
+              </form>
+
               </div>
             </div>
           )}
