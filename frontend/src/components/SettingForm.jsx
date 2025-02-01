@@ -1,3 +1,4 @@
+// src/components/SettingForm.jsx
 import React, { useState, useEffect } from 'react';
 import {
   Box,
@@ -15,6 +16,7 @@ import {
   Save as SaveIcon,
 } from '@mui/icons-material';
 import { keyframes } from '@emotion/react';
+import { api } from '../services/api'; // Adjust the import path as needed
 
 const shineAnimation = keyframes`
   0% { transform: translateX(-150%); }
@@ -143,17 +145,32 @@ const SettingForm = () => {
   const [aboutMe, setAboutMe] = useState('');
   const [preferences, setPreferences] = useState('');
 
-  useEffect(() => {
-    const savedAboutMe = localStorage.getItem('aboutMe');
-    const savedPreferences = localStorage.getItem('preferences');
-    if (savedAboutMe) setAboutMe(savedAboutMe);
-    if (savedPreferences) setPreferences(savedPreferences);
-  }, []);
+  // Assume you have a userId available. Replace this with your actual logic.
+  const userId = localStorage.getItem('userId') || '679e15c96fe1952a54bba9c4';
 
-  const handleSave = () => {
-    localStorage.setItem('aboutMe', aboutMe);
-    localStorage.setItem('preferences', preferences);
-    alert('Settings saved successfully!');
+  // Fetch user settings on component mount.
+  useEffect(() => {
+    api.getUserSettings(userId)
+      .then((data) => {
+        if (data) {
+          setAboutMe(data.aboutMe || '');
+          setPreferences(data.preferences || '');
+        }
+      })
+      .catch((error) => {
+        console.error("Error fetching user settings:", error);
+      });
+  }, [userId]);
+
+  // When the user saves, update the settings via the API.
+  const handleSave = async () => {
+    try {
+      await api.updateUserSettings(userId, aboutMe, preferences);
+      alert('Settings updated successfully!');
+    } catch (error) {
+      console.error("Error updating settings:", error);
+      alert('Error updating settings');
+    }
   };
 
   return (

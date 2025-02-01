@@ -35,9 +35,11 @@ func main() {
 
 	db := mongoClient.Database(cfg.DatabaseName)
 	chatRepo := repository.NewChatRepository(db)
+	userRepo := repository.NewUserRepository(db)
 	chatService := services.NewChatService(chatRepo)
 	ollamaService := services.NewOllamaService()
-	handler := api.NewHandler(chatService, ollamaService)
+	userService := services.NewUserService(userRepo)
+	handler := api.NewHandler(chatService, ollamaService, userService)
 	router := api.SetupRoutes(handler)
 
 	srv := &http.Server{

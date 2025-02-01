@@ -23,13 +23,15 @@ var totalThreads = 0
 type Handler struct {
 	ChatService   *services.ChatService
 	OllamaService *services.OllamaService
+	UserService   *services.UserService // <-- New field
 }
 
 // NewHandler creates a new Handler instance.
-func NewHandler(chatService *services.ChatService, ollamaService *services.OllamaService) *Handler {
+func NewHandler(chatService *services.ChatService, ollamaService *services.OllamaService, userService *services.UserService) *Handler {
 	return &Handler{
 		ChatService:   chatService,
 		OllamaService: ollamaService,
+		UserService:   userService,
 	}
 }
 
@@ -247,4 +249,109 @@ func (h *Handler) DeleteAllChatsHandler(w http.ResponseWriter, r *http.Request) 
 	h.CreateDefaultMessage(w, r)
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *Handler) GetUserSettingsHandler(w http.ResponseWriter, r *http.Request) {
+	// Expecting a query parameter: /api/user?userId=<user-id>
+	userIdStr := r.URL.Query().Get("userId")
+	if userIdStr == "" {
+		http.Error(w, "User ID is required", http.StatusBadRequest)
+		return
+	}
+
+	userID, err := primitive.ObjectIDFromHex(userIdStr)
+	if err != nil {
+		http.Error(w, "Invalid user ID", http.StatusBadRequest)
+		return
+	}
+
+	user, err := h.UserService.GetUserByID(userID)
+	if err != nil {
+		http.Error(w, "User not found", http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(user)
+}
+
+// CreateUserHandler handles user creation
+func (h *Handler) CreateUserHandler(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Username string `json:"username"`
+		AboutMe  string `json:"aboutMe"`
+	}
+
+	// Decode JSON request
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid payload", http.StatusBadRequest)
+		return
+	}
+
+	// Ensure username is provided
+	if req.Username == "" {
+		http.Error(w, "Username is required", http.StatusBadRequest)
+		return
+	}
+
+	// Create a new user model
+	user := models.User{
+		ID:        primitive.NewObjectID(),
+		Username:  req.Username,
+		AboutMe:   req.AboutMe,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+
+	// Insert user into database
+	err := h.UserService.UserRepo.CreateUser(&user)
+	if err != nil {
+		http.Error(w, "Failed to create user", http.StatusInternalServerError)
+		return
+	}
+
+	// Respond with success
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(map[string]string{
+		"status":   "success",
+		"message":  "User created successfully",
+		"userId":   user.ID.Hex(),
+		"username": user.Username,
+	})
+}
+
+func (h *Handler) UpdateUserSettingsHandler(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		UserId      string `json:"userId"`
+		AboutMe     string `json:"aboutMe"`
+		Preferences string `json:"preferences"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid payload", http.StatusBadRequest)
+		return
+	}
+
+	if req.UserId == "" {
+		http.Error(w, "User ID is required", http.StatusBadRequest)
+		return
+	}
+
+	userID, err := primitive.ObjectIDFromHex(req.UserId)
+	if err != nil {
+		http.Error(w, "Invalid user ID", http.StatusBadRequest)
+		return
+	}
+
+	// Directly overwrite values instead of appending
+	err = h.UserService.UpdateUserSettings(userID, req.AboutMe, req.Preferences)
+	if err != nil {
+		http.Error(w, "Failed to update user settings", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"status": "success"})
 }

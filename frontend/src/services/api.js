@@ -85,5 +85,20 @@ export const api = {
         console.error("Max retries reached. Unable to reconnect SSE.");
       }
     }
+  },
+
+   // New method: GET user settings.
+   async getUserSettings(userId) {
+    const response = await axios.get(`${API_BASE_URL}/user`, {
+      params: { userId }
+    });
+    return response.data;
+  },
+
+  // New method: PUT (update) user settings.
+  async updateUserSettings(userId, aboutMe, preferences) {
+    const payload = { userId, aboutMe, preferences };
+    const response = await axios.put(`${API_BASE_URL}/user`, payload);
+    return response.data;
   }
 };

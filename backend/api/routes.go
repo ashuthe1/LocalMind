@@ -10,7 +10,6 @@ import (
 
 func SetupRoutes(handler *Handler) *mux.Router {
 	router := mux.NewRouter().StrictSlash(true)
-
 	apiRouter := router.PathPrefix("/api").Subrouter()
 
 	// Chat routes
@@ -19,5 +18,9 @@ func SetupRoutes(handler *Handler) *mux.Router {
 	apiRouter.HandleFunc("/chat/{id}", handler.DeleteChatHandler).Methods(http.MethodDelete)
 	apiRouter.HandleFunc("/chats", handler.DeleteAllChatsHandler).Methods(http.MethodDelete)
 
+	// User settings routes
+	apiRouter.HandleFunc("/user", handler.GetUserSettingsHandler).Methods(http.MethodGet)
+	apiRouter.HandleFunc("/user", handler.UpdateUserSettingsHandler).Methods(http.MethodPut)
+	apiRouter.HandleFunc("/create-user", handler.CreateUserHandler).Methods(http.MethodPost)
 	return router
 }
