@@ -26,7 +26,7 @@ export const api = {
     const response = await axios.delete(`${API_BASE_URL}/chats`);
     return response.data;
   },
-  
+
   async sendMessageSSE(message, chatId, onChunk) {
     const requestBody = { message, model: "deepseek" };
     if (chatId) {
@@ -43,6 +43,7 @@ export const api = {
     }
 
     // Get a reader from the response body
+   // Inside your fetch-based SSE method:
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     let buffer = "";
@@ -50,27 +51,24 @@ export const api = {
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
-      // Decode the received chunk and append to buffer.
-      buffer += decoder.decode(value, { stream: true });
-      
-      // SSE events are separated by double newlines.
+      const chunkText = decoder.decode(value, { stream: true });
+      console.log("Received raw chunk:", chunkText); // Debug log
+      buffer += chunkText;
+      buffer = buffer.replace(/\r\n/g, "\n");
       const parts = buffer.split("\n\n");
-      // Keep the last partial part in the buffer.
-      buffer = parts.pop();
-      
+      buffer = parts.pop(); // Save the partial event for later.
       parts.forEach(part => {
-        // Each SSE event line starts with "data: "
         if (part.startsWith("data: ")) {
-          const data = part.replace("data: ", "").trim();
+          const data = part.slice("data: ".length).trim();
+          console.log("Parsed SSE data:", data); // Debug log
           if (data) {
             onChunk(data);
           }
         }
       });
     }
-    // Process any remaining text.
     if (buffer.startsWith("data: ")) {
-      const data = buffer.replace("data: ", "").trim();
+      const data = buffer.slice("data: ".length).trim();
       if (data) onChunk(data);
     }
   }
