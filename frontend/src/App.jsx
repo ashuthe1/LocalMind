@@ -1,4 +1,4 @@
-/* File: src/App.jsx*/
+// src/App.jsx
 import { useState, useEffect, createContext, useRef } from 'react';
 import { ThemeProvider, createTheme, CssBaseline, IconButton, Fab } from '@mui/material';
 import { Brightness4, Brightness7, Add, Send } from '@mui/icons-material';
