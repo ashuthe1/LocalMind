@@ -1,69 +1,162 @@
-/* Navbar.css */
+/* src/styles/Navbar.css */
+
+/* -------------------------------------------
+   Colors, Durations, and Global Variables
+--------------------------------------------- */
+:root {
+  --primary-main: #3182ce;       /* Primary dark color */
+  --secondary-main: #805ad5;     /* Secondary dark color */
+  --gradient-animation-duration: 8s;
+  --shine-animation-duration: 3s;
+}
+
+/* -------------------------------------------
+   Navbar Container (Always Light Theme)
+--------------------------------------------- */
 .navbar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 16px 24px;
-    background: #ffffff;
-    border-bottom: 1px solid #e2e8f0;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  }
-  
-  .dark .navbar {
-    background: #2d3748;
-    border-bottom: 1px solid #4a5568;
-  }
-  
-  .navbar-brand h1 {
-    font-size: 1.5rem;
-    font-weight: bold;
-    color: #2d3748;
-  }
-  
-  .dark .navbar-brand h1 {
-    color: #f7fafc;
-  }
-  
-  .navbar-buttons {
-    display: flex;
-    gap: 16px;
-  }
-  
-  .navbar-btn {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: transparent;
-    border: none;
-    padding: 8px 12px;
-    font-size: 1rem;
-    color: #2d3748;
-    cursor: pointer;
-    border-radius: 8px;
-    transition: background 0.3s, transform 0.3s;
-  }
-  
-  .navbar-btn:hover {
-    background: #edf2f7;
-    transform: translateY(-2px);
-  }
-  
-  .dark .navbar-btn {
-    color: #e2e8f0;
-  }
-  
-  .dark .navbar-btn:hover {
-    background: #4a5568;
-  }
-  
-  .navbar-btn.active {
-    background: #bee3f8;
-    color: #2c5282;
-    box-shadow: 0 4px 8px rgba(66, 153, 225, 0.3);
-  }
-  
-  .dark .navbar-btn.active {
-    background: #2a4365;
-    color: #cbd5e0;
-  }
-  
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  border-bottom: 1px solid #e2e8f0;
+  overflow: hidden; /* Hide overflowing animated elements */
+  background: #000000;
+  background: -webkit-linear-gradient(to right, #434343, #000000);
+  background: linear-gradient(to right, #434343, #000000);
+
+}
+
+/* Animated gradient background for the navbar container*/
+.navbar-background-animation {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 200%;
+  height: 100%;
+  /* background: linear-gradient(45deg, #ededed, #030303, #0e1215); */
+  background-size: 400% 400%;
+  animation: gradientShift var(--gradient-animation-duration) ease infinite;
+  z-index: 0;
+  opacity: 0.3;
+}
+
+@keyframes gradientShift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* -------------------------------------------
+   Brand Box (Dark-Themed Styling)
+--------------------------------------------- */
+.navbar-brand {
+  position: relative;
+  z-index: 1;
+}
+
+.brand-box {
+  position: relative;
+  display: inline-block;
+  padding: 8px 16px;
+  background: rgba(0, 0, 0, 0.3); /* Dark background */
+  border: 2px solid #fff;
+  border-radius: 12px;
+  overflow: hidden;
+  transition: transform 0.3s ease, background 0.3s ease;
+}
+
+.brand-box:hover {
+  transform: scale(1.05);
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.brand-box h1 {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #fff; /* White text for dark style */
+  position: relative;
+  z-index: 2;
+  margin: 0;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.7);
+}
+
+/* Shine overlay on the brand box */
+.brand-box::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -150%;
+  width: 150%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.5), transparent);
+  animation: shineButton var(--shine-animation-duration) infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* -------------------------------------------
+   Navbar Buttons (Dark-Themed Styling)
+--------------------------------------------- */
+.navbar-buttons {
+  display: flex;
+  gap: 16px;
+  position: relative;
+  z-index: 1;
+}
+
+.navbar-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.3); /* Dark button background */
+  border: none;
+  padding: 8px 16px;
+  font-size: 1rem;
+  color: #fff; /* White text */
+  cursor: pointer;
+  border-radius: 8px;
+  transition: transform 0.3s, background 0.3s;
+  overflow: hidden;
+}
+
+.navbar-btn:hover {
+  transform: scale(1.05);
+  background: rgba(0, 0, 0, 0.5);
+}
+
+/* Active button: animated underline effect */
+.navbar-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(90deg, var(--primary-main), var(--secondary-main));
+  animation: underlineAnimation var(--shine-animation-duration) linear infinite;
+}
+
+@keyframes underlineAnimation {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Shine overlay for each button */
+.navbar-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -150%;
+  width: 150%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.5), transparent);
+  animation: shineButton var(--shine-animation-duration) infinite;
+  pointer-events: none;
+}
+
+@keyframes shineButton {
+  0% { transform: translateX(-150%); }
+  100% { transform: translateX(150%); }
+}

@@ -1,3 +1,4 @@
+// src/components/Navbar.jsx
 import React from 'react';
 import { MessageCircle, Settings, Sun, Moon } from 'lucide-react';
 import '../styles/Navbar.css';
@@ -5,9 +6,15 @@ import '../styles/Navbar.css';
 const Navbar = ({ darkMode, toggleTheme, activeView, setActiveView }) => {
   return (
     <nav className="navbar">
+      {/* Animated background gradient for the entire navbar */}
+      <div className="navbar-background-animation"></div>
+
       <div className="navbar-brand">
-        <h1>LocalMind✨</h1>
+        <div className="brand-box">
+          <h1>LocalMind✨</h1>
+        </div>
       </div>
+
       <div className="navbar-buttons">
         <button
           onClick={() => setActiveView('chat')}
