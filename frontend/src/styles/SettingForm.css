@@ -1,0 +1,105 @@
+/* SettingForm.css */
+.setting-form {
+    max-width: 800px;
+    margin: 40px auto;
+    padding: 24px;
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+  
+  .dark .setting-form {
+    background: #2d3748;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+  
+  .form-title {
+    text-align: center;
+    font-size: 2rem;
+    margin-bottom: 24px;
+    color: #2d3748;
+  }
+  
+  .dark .form-title {
+    color: #e2e8f0;
+  }
+  
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  
+  @media (min-width: 768px) {
+    .form-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+  
+  .form-group {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .form-label {
+    font-size: 1.1rem;
+    margin-bottom: 8px;
+    color: #2d3748;
+  }
+  
+  .dark .form-label {
+    color: #e2e8f0;
+  }
+  
+  .form-textarea {
+    width: 100%;
+    min-height: 180px;
+    padding: 12px;
+    font-size: 1rem;
+    border: 2px solid #cbd5e0;
+    border-radius: 8px;
+    resize: none;
+    background: #f7fafc;
+    color: #2d3748;
+    transition: border-color 0.3s;
+  }
+  
+  .form-textarea:focus {
+    outline: none;
+    border-color: #3182ce;
+  }
+  
+  .dark .form-textarea {
+    background: #4a5568;
+    color: #edf2f7;
+    border-color: #718096;
+  }
+  
+  .form-action {
+    text-align: center;
+    margin-top: 24px;
+  }
+  
+  .save-button {
+    padding: 12px 32px;
+    background: #3182ce;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background 0.3s, transform 0.3s;
+  }
+  
+  .save-button:hover {
+    background: #2b6cb0;
+    transform: translateY(-2px);
+  }
+  
+  .save-message {
+    margin-top: 16px;
+    text-align: center;
+    font-size: 1rem;
+    color: #38a169;
+  }
+  
