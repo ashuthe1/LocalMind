@@ -1,5 +1,3 @@
-#!/bin/bash
-
 echo "🚀 Starting backend and frontend..."
 
 # Start Frontend (React + Vite)
