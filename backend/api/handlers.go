@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/ashuthe1/localmind/config"
@@ -90,19 +91,40 @@ func (h *Handler) SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 	doneCh := make(chan struct{})
+	var once sync.Once // Ensure doneCh is only closed once
 
 	// Goroutine to detect client disconnection
 	go func() {
 		<-ctx.Done()
-		log.Println("Client disconnected, stopping SSE stream...")
-		close(doneCh)
+		once.Do(func() {
+			log.Println("Client disconnected, stopping SSE stream...")
+			close(doneCh)
+		})
 	}()
 
 	// Start heartbeat to keep connection alive
-	heartbeatTicker := time.NewTicker(10 * time.Second)
-	defer heartbeatTicker.Stop() // Ensure cleanup
+	heartbeatTicker := time.NewTicker(5 * time.Second) // More frequent heartbeats
+	defer heartbeatTicker.Stop()
 
 	assistantResponse := ""
+
+	// Goroutine to send heartbeats
+	go func() {
+		for {
+			select {
+			case <-heartbeatTicker.C:
+				if _, err := w.Write([]byte("data: \n\n")); err != nil {
+					log.Println("Error sending heartbeat:", err)
+					once.Do(func() { close(doneCh) }) // Ensure doneCh is closed only once
+					return
+				}
+				flusher.Flush()
+			case <-doneCh:
+				log.Println("Stopping heartbeat goroutine")
+				return
+			}
+		}
+	}()
 
 	// Callback function to send streamed data
 	sendChunk := func(chunk string) error {
@@ -113,6 +135,7 @@ func (h *Handler) SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 			_, err := w.Write([]byte("data: " + chunk + "\n\n"))
 			if err != nil {
 				log.Println("Error sending chunk:", err)
+				once.Do(func() { close(doneCh) }) // Ensure doneCh is closed only once
 				return err
 			}
 			flusher.Flush()
@@ -146,7 +169,6 @@ func (h *Handler) SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write([]byte("event: complete\ndata: done\n\n"))
 	flusher.Flush()
 }
-
 
 // GetChatsHandler retrieves all chats.
 func (h *Handler) GetChatsHandler(w http.ResponseWriter, r *http.Request) {
