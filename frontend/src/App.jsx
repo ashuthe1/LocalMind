@@ -7,6 +7,7 @@ import Message from './components/Message';
 import Navbar from './components/Navbar';
 import SettingForm from './components/SettingForm';
 import './styles/App.css';
+import { Box } from 'lucide-react';
 
 export const ThemeContext = createContext({ toggleTheme: () => {} });
 
@@ -144,7 +145,9 @@ function App() {
             setActiveView={setActiveView}
           />
           {activeView === 'settings' ? (
-            <SettingForm />
+            <div className='SettingBox'>
+              <SettingForm />
+            </div>
           ) : (
             <div className="main-container">
               <ChatList
