@@ -46,7 +46,7 @@ func (h *Handler) CreateDefaultMessage(w http.ResponseWriter, r *http.Request) {
 	userMessage := models.Message{
 		ID:        primitive.NewObjectID(),
 		Role:      "assistant",
-		Content:   "Hi, I'm LocalMind, AI ChatBot running completly locally on your system, with no external dependencies.",
+		Content:   "Hi, I'm Smriti, an AI chatbot running completely locally on your system with no external dependencies.",
 		Timestamp: time.Now(),
 	}
 

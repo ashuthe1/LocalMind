@@ -52,7 +52,7 @@ export const api = {
         if (done) break;
   
         const chunkText = decoder.decode(value, { stream: true });
-        console.log("Received raw chunk:", chunkText); // Debug log
+        // console.log("Received raw chunk:", chunkText); // Debug log
         buffer += chunkText;
         buffer = buffer.replace(/\r\n/g, "\n");
   
@@ -61,7 +61,7 @@ export const api = {
         parts.forEach((part) => {
           if (part.startsWith("data: ")) {
             const data = part.slice("data: ".length).trim();
-            console.log("Parsed SSE data:", data); // Debug log
+            // console.log("Parsed SSE data:", data); // Debug log
             if (data) {
               onChunk(data);
             }
