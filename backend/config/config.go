@@ -4,6 +4,7 @@ package config
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -27,21 +28,18 @@ type Config struct {
 	UserName      string
 }
 
-// LoadConfig loads configuration from a .env file if present,
-// otherwise uses environment variables or defaults.
 func LoadConfig() *Config {
-	// Load environment variables from .env file if it exists
-	homeDir, err := os.UserHomeDir()
+	curDir, err := os.Getwd()
 	if err != nil {
-		log.Fatalf("Failed to get home directory: %v", err)
+		log.Fatalf("Failed to get current directory: %v", err)
 	}
 
-	// Define the path to the .env file (e.g., $HOME/../.. translates to two levels up)
-	PATH := filepath.Join(homeDir, "Learnings", "LocalMind", ".env")
-	log.Println("Path: ", PATH)
-	err = godotenv.Load(PATH)
+	envFilePath := filepath.Join(filepath.Dir(curDir), ".env")
+
+	err = godotenv.Load(envFilePath)
 	if err != nil {
 		log.Println("No .env file found or failed to load it. Continuing without environment variables or defaults.")
+		log.Println("Expecting .env file in this path: ", envFilePath)
 	}
 
 	ModelName = getEnv("MODEL_NAME", "deepseek-r1:8b")
@@ -50,7 +48,7 @@ func LoadConfig() *Config {
 	return &Config{
 		ServerAddress: getEnv("SERVER_ADDRESS", ":8080"),
 		MongoURI:      getEnv("MONGO_URI", "mongodb://localhost:27017"),
-		DatabaseName:  getEnv("DATABASE_NAME", "ollama_db"),
+		DatabaseName:  getEnv("DATABASE_NAME", "LocalMind"),
 		ModelName:     getEnv("MODEL_NAME", "deepseek-r1:8b"),
 		UserName:      getEnv("USERNAME", "ashuthe1"),
 	}
@@ -80,6 +78,6 @@ func ConnectMongoDB(uri string) (*mongo.Client, error) {
 		return nil, err
 	}
 
-	log.Println("Connected to MongoDB!")
+	fmt.Println("Connected to MongoDB!")
 	return client, nil
 }

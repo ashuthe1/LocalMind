@@ -66,8 +66,12 @@ initialize() {
       \"message\": \"Hello\"
     }" > /dev/null 2>&1
 
-  echo "🚀 Initialization Setup Completed, App is running on port 5173 ツ"
-  sleep 5 
+  echo "📦 Initialization Setup Completed, App is running on port 5173 ツ"
+}
+
+launchBrowser() {
+  sleep 2
+  echo "🚀 Opening \033[32mhttp://localhost:5173\033[0m in the default web browser ツ"
 
   # Open localhost:5173 in the default web browser
   if command -v xdg-open > /dev/null; then
@@ -85,5 +89,7 @@ start_backend
 if $INIT; then
   initialize
 fi
+
+launchBrowser
 
 wait

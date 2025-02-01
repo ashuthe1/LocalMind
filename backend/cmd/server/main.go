@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -52,7 +53,7 @@ func main() {
 
 	// Start Server
 	go func() {
-		logger.Log.Infof("Server is running on %s", cfg.ServerAddress)
+		fmt.Printf("Server is running on %s\n", cfg.ServerAddress)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			logger.Log.Fatalf("Server failed: %v", err)
 		}
