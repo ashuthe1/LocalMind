@@ -17,9 +17,126 @@ import {
 import { keyframes } from '@emotion/react';
 
 const shineAnimation = keyframes`
-  0% { background-position: -100px; }
-  100% { background-position: 200px; }
+  0% { transform: translateX(-150%); }
+  100% { transform: translateX(150%); }
 `;
+
+// A separate SettingBox component with its own focus state.
+const SettingBox = ({ title, icon, content, setContent }) => {
+  const theme = useTheme();
+  const [isFocused, setIsFocused] = useState(false);
+
+  return (
+    <Paper
+      elevation={3}
+      sx={{
+        p: 3,
+        height: '100%',
+        background:
+          theme.palette.mode === 'dark'
+            ? 'rgba(45, 55, 72, 0.8)'
+            : 'rgba(255, 255, 255, 0.8)',
+        backdropFilter: 'blur(10px)',
+        borderRadius: '12px',
+        position: 'relative',
+        overflow: 'hidden',
+        transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+        '&:hover': {
+          transform: 'scale(1.02)',
+          boxShadow: theme.shadows[6],
+        },
+      }}
+    >
+      {/* Conditionally render the shine overlay only when NOT focused */}
+      {!isFocused && (
+        <Box
+          sx={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            zIndex: 0,
+            pointerEvents: 'none',
+            overflow: 'hidden',
+          }}
+        >
+          <Box
+            sx={{
+              position: 'absolute',
+              top: 0,
+              left: '-150%',
+              width: '150%',
+              height: '100%',
+              background: `linear-gradient(90deg, transparent, ${theme.palette.primary.main}33, transparent)`,
+              animation: `${shineAnimation} 3s infinite linear`,
+            }}
+          />
+        </Box>
+      )}
+
+      {/* Content container with higher stacking order */}
+      <Box sx={{ position: 'relative', zIndex: 1 }}>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            mb: 2,
+          }}
+        >
+          <IconButton
+            color="primary"
+            sx={{
+              mr: 1,
+              backgroundColor: theme.palette.action.hover,
+            }}
+          >
+            {icon}
+          </IconButton>
+          <Typography
+            variant="h6"
+            sx={{
+              fontWeight: 'bold',
+              background: `linear-gradient(45deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+            }}
+          >
+            {title}
+          </Typography>
+        </Box>
+        <TextField
+          fullWidth
+          multiline
+          rows={8}
+          variant="outlined"
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
+          placeholder={`Enter your ${title.toLowerCase()}...`}
+          sx={{
+            backgroundColor: theme.palette.background.paper,
+            borderRadius: '8px',
+            '& .MuiOutlinedInput-root': {
+              borderRadius: '8px',
+              transition: 'all 0.3s ease',
+              '& fieldset': {
+                borderColor: theme.palette.divider,
+              },
+              '&:hover fieldset': {
+                borderColor: theme.palette.primary.main,
+              },
+              '&.Mui-focused fieldset': {
+                borderColor: theme.palette.primary.main,
+              },
+            },
+          }}
+        />
+      </Box>
+    </Paper>
+  );
+};
 
 const SettingForm = () => {
   const theme = useTheme();
@@ -38,104 +155,6 @@ const SettingForm = () => {
     localStorage.setItem('preferences', preferences);
     alert('Settings saved successfully!');
   };
-
-  const SettingBox = ({ title, icon, content, setContent }) => (
-    <Paper
-      elevation={3}
-      sx={{
-        p: 3,
-        height: '100%',
-        background: theme.palette.mode === 'dark'
-          ? 'rgba(45, 55, 72, 0.8)'
-          : 'rgba(255, 255, 255, 0.8)',
-        backdropFilter: 'blur(10px)',
-        borderRadius: '12px',
-        position: 'relative',
-        overflow: 'hidden',
-        transition: 'transform 0.3s ease, box-shadow 0.3s ease',
-        '&:hover': {
-          transform: 'scale(1.02)',
-          boxShadow: theme.shadows[6],
-        },
-      }}
-    >
-      {/* Header with icon and title */}
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          mb: 2,
-          position: 'relative',
-          zIndex: 1, // Ensures the header content stays above the shine overlay
-        }}
-      >
-        <IconButton
-          color="primary"
-          sx={{
-            mr: 1,
-            backgroundColor: theme.palette.action.hover,
-          }}
-        >
-          {icon}
-        </IconButton>
-        <Typography
-          variant="h6"
-          sx={{
-            fontWeight: 'bold',
-            background: `linear-gradient(45deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-          }}
-        >
-          {title}
-        </Typography>
-      </Box>
-
-      {/* Shine effect overlay */}
-      <Box
-        sx={{
-          position: 'absolute',
-          top: 0,
-          left: '-100px',
-          width: '150%',
-          height: '100%',
-          background: `linear-gradient(90deg, transparent, ${theme.palette.primary.main}33, transparent)`,
-          animation: `${shineAnimation} 3s infinite linear`,
-          pointerEvents: 'none', // This prevents the overlay from intercepting clicks
-          zIndex: 0,
-        }}
-      />
-
-      {/* Text input field */}
-      <TextField
-        fullWidth
-        multiline
-        rows={8}
-        variant="outlined"
-        value={content}
-        onChange={(e) => setContent(e.target.value)}
-        placeholder={`Enter your ${title.toLowerCase()}...`}
-        sx={{
-          mt: 2,
-          backgroundColor: theme.palette.background.paper,
-          borderRadius: '8px',
-          '& .MuiOutlinedInput-root': {
-            borderRadius: '8px',
-            transition: 'all 0.3s ease',
-            '& fieldset': {
-              borderColor: theme.palette.divider,
-            },
-            '&:hover fieldset': {
-              borderColor: theme.palette.primary.main,
-            },
-            '&.Mui-focused fieldset': {
-              borderColor: theme.palette.primary.main,
-            },
-          },
-        }}
-      />
-    </Paper>
-  );
 
   return (
     <Box sx={{ flexGrow: 1, p: 3 }}>
