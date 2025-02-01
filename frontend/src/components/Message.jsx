@@ -23,7 +23,7 @@ const Message = ({ message, darkMode }) => {
         <div className="message-content">
           {thinking && (
             <div className={`thinking-bubble ${darkMode ? 'dark' : 'light'}`}>
-              <span className="thinking-label">🤔 Internal Monologue:</span>
+              <span className="thinking-label">💡 Model's Thought Process:</span>
               {thinking}
             </div>
           )}
@@ -65,7 +65,7 @@ const Message = ({ message, darkMode }) => {
   return (
     <div className={`message ${message.role} ${darkMode ? 'dark' : 'light'}`}>
       <span className="message-icon">
-        {message.role === 'user' ? '👤' : '🤖'}
+        {message.role === 'user' ? '🙍🏻‍♂️' : '👱🏻‍♀️'}
       </span>
       {renderContent()}
       {timestamp && <div className="timestamp">{timestamp}</div>}
