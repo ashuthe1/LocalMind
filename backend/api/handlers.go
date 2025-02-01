@@ -100,8 +100,35 @@ func (h *Handler) SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 		return nil
 	}
 
+	// Start a heartbeat ticker that sends an empty event every 10 seconds
+	heartbeatTicker := time.NewTicker(10 * time.Second)
+	// A channel to signal when streaming is done so the ticker can be stopped
+	doneCh := make(chan struct{})
+
+	go func() {
+		for {
+			select {
+			case <-heartbeatTicker.C:
+				// Send a heartbeat event (an empty data event)
+				_, err := w.Write([]byte("data: \n\n"))
+				if err != nil {
+					// If we encounter an error, likely the client has disconnected.
+					return
+				}
+				flusher.Flush()
+			case <-doneCh:
+				return
+			}
+		}
+	}()
+
 	// Stream response from the Ollama model.
-	if err := h.OllamaService.StreamResponse(req.Message, config.ModelName, sendChunk); err != nil {
+	err = h.OllamaService.StreamResponse(req.Message, config.ModelName, sendChunk)
+	// Signal the heartbeat goroutine to stop and stop the ticker.
+	close(doneCh)
+	heartbeatTicker.Stop()
+
+	if err != nil {
 		http.Error(w, "Failed to stream response from LLM", http.StatusInternalServerError)
 		return
 	}
@@ -121,6 +148,7 @@ func (h *Handler) SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write([]byte("event: complete\ndata: done\n\n"))
 	flusher.Flush()
 }
+
 
 // GetChatsHandler retrieves all chats.
 func (h *Handler) GetChatsHandler(w http.ResponseWriter, r *http.Request) {
