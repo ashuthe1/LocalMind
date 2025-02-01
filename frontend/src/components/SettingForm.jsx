@@ -41,37 +41,32 @@ const SettingForm = () => {
 
   const SettingBox = ({ title, icon, content, setContent }) => (
     <Paper
-      elevation={0}
+      elevation={3}
       sx={{
         p: 3,
         height: '100%',
-        background: 'transparent',
-        transition: 'all 0.3s ease',
+        background: theme.palette.mode === 'dark'
+          ? 'rgba(45, 55, 72, 0.8)'
+          : 'rgba(255, 255, 255, 0.8)',
+        backdropFilter: 'blur(10px)',
+        borderRadius: '12px',
+        position: 'relative',
+        overflow: 'hidden',
+        transition: 'transform 0.3s ease, box-shadow 0.3s ease',
         '&:hover': {
-          '& .MuiTextField-root': {
-            transform: 'scale(1.05)',
-            boxShadow: theme.shadows[4],
-          },
+          transform: 'scale(1.02)',
+          boxShadow: theme.shadows[6],
         },
       }}
     >
-      <Box 
-        sx={{ 
-          display: 'flex', 
-          alignItems: 'center', 
+      {/* Header with icon and title */}
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
           mb: 2,
           position: 'relative',
-          overflow: 'hidden',
-          '&::after': {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            left: -100,
-            width: '150%',
-            height: '100%',
-            background: `linear-gradient(90deg, transparent, ${theme.palette.primary.main}33, transparent)`,
-            animation: `${shineAnimation} 3s infinite linear`,
-          },
+          zIndex: 1, // Ensures the header content stays above the shine overlay
         }}
       >
         <IconButton
@@ -83,9 +78,9 @@ const SettingForm = () => {
         >
           {icon}
         </IconButton>
-        <Typography 
-          variant="h6" 
-          sx={{ 
+        <Typography
+          variant="h6"
+          sx={{
             fontWeight: 'bold',
             background: `linear-gradient(45deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
             WebkitBackgroundClip: 'text',
@@ -95,6 +90,23 @@ const SettingForm = () => {
           {title}
         </Typography>
       </Box>
+
+      {/* Shine effect overlay */}
+      <Box
+        sx={{
+          position: 'absolute',
+          top: 0,
+          left: '-100px',
+          width: '150%',
+          height: '100%',
+          background: `linear-gradient(90deg, transparent, ${theme.palette.primary.main}33, transparent)`,
+          animation: `${shineAnimation} 3s infinite linear`,
+          pointerEvents: 'none', // This prevents the overlay from intercepting clicks
+          zIndex: 0,
+        }}
+      />
+
+      {/* Text input field */}
       <TextField
         fullWidth
         multiline
@@ -104,9 +116,12 @@ const SettingForm = () => {
         onChange={(e) => setContent(e.target.value)}
         placeholder={`Enter your ${title.toLowerCase()}...`}
         sx={{
-          mb: 2,
-          transition: 'all 0.3s ease',
+          mt: 2,
+          backgroundColor: theme.palette.background.paper,
+          borderRadius: '8px',
           '& .MuiOutlinedInput-root': {
+            borderRadius: '8px',
+            transition: 'all 0.3s ease',
             '& fieldset': {
               borderColor: theme.palette.divider,
             },
@@ -124,7 +139,11 @@ const SettingForm = () => {
 
   return (
     <Box sx={{ flexGrow: 1, p: 3 }}>
-      <Typography variant="h4" gutterBottom sx={{ mb: 4, textAlign: 'center' }}>
+      <Typography
+        variant="h4"
+        gutterBottom
+        sx={{ mb: 4, textAlign: 'center', fontWeight: 700 }}
+      >
         Personalize Your Experience
       </Typography>
       <Grid container spacing={3}>
