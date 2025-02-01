@@ -106,3 +106,7 @@
     transform: translateY(-6px);
   }
 }
+
+.toggle-btn {
+  cursor: pointer;
+}

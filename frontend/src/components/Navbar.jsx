@@ -11,9 +11,10 @@ const Navbar = ({ darkMode, toggleTheme, activeView, setActiveView }) => {
 
       <div className="navbar-brand">
         <div className="brand-box">
-          <h1>LocalMind✨</h1>
+          <h3>LocalMind✨</h3>
         </div>
       </div>
+      {/* <h2>LocalMind✨</h2> */}
 
       <div className="navbar-buttons">
         <button
@@ -33,6 +34,7 @@ const Navbar = ({ darkMode, toggleTheme, activeView, setActiveView }) => {
         <button onClick={toggleTheme} className="navbar-btn">
           {darkMode ? <Sun size={20} /> : <Moon size={20} />}
         </button>
+
       </div>
     </nav>
   );

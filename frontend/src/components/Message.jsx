@@ -1,5 +1,4 @@
-// src/components/Message.jsx
-import React from 'react';
+import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
@@ -7,26 +6,36 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { materialDark, materialLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import '../styles/Message.css';
 
+const defaultThought = 'This question is straightforward, so I won’t need to think much before answering. It’s clear and simple, just how I like it! No need for overthinking—I"ll give a quick and direct response.';
 const isValidTimestamp = (timestamp) => {
   const date = new Date(timestamp);
   return !isNaN(date) && date.getFullYear() > 1;
 };
 
 const Message = ({ message, darkMode }) => {
+  const [showThinking, setShowThinking] = useState(false);
+
   const renderContent = () => {
     if (message.role === 'assistant') {
       const thinkMatch = message.content.match(/<think>(.*?)<\/think>/s);
-      const thinking = thinkMatch ? thinkMatch[1] : '';
+      const thinking = thinkMatch ? thinkMatch[1] : defaultThought
       const finalResponse = message.content.replace(/<think>.*?<\/think>/s, '').trim();
 
       return (
         <div className="message-content">
-          {thinking && (
+          <div className="toggle-btn" onClick={() => setShowThinking(!showThinking)}>
             <div className={`thinking-bubble ${darkMode ? 'dark' : 'light'}`}>
-              <span className="thinking-label">💡 Model's Thought Process:</span>
-              {thinking}
+              <span className="thinking-label">💡 Thought Process:</span>
+              <span>
+                {showThinking ? thinking : `${thinking.substring(0, 150)}...`}
+                {thinking.length > 150 && (
+                  <button>
+                    {showThinking ? 'Hide Details' : 'View Details'}
+                  </button>
+                )}
+              </span>
             </div>
-          )}
+          </div>
           <ReactMarkdown
             remarkPlugins={[remarkGfm]}
             rehypePlugins={[rehypeRaw]}
@@ -65,7 +74,7 @@ const Message = ({ message, darkMode }) => {
   return (
     <div className={`message ${message.role} ${darkMode ? 'dark' : 'light'}`}>
       <span className="message-icon">
-        {message.role === 'user' ? '🙍🏻‍♂️' : '👱🏻‍♀️'}
+        {message.role === 'user' ? '🙍🏻‍♂️' : '👱🏻‍♀️ Smriti '}
       </span>
       {renderContent()}
       {timestamp && <div className="timestamp">{timestamp}</div>}

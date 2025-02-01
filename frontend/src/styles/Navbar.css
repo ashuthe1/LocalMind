@@ -52,6 +52,7 @@
 --------------------------------------------- */
 .navbar-brand {
   position: relative;
+  margin-left: 5%;
   z-index: 1;
 }
 
@@ -63,6 +64,7 @@
   border: 2px solid #fff;
   border-radius: 12px;
   overflow: hidden;
+  color: white;
   transition: transform 0.3s ease, background 0.3s ease;
 }
 
@@ -99,6 +101,7 @@
    Navbar Buttons (Dark-Themed Styling)
 --------------------------------------------- */
 .navbar-buttons {
+  margin-right: 5%;
   display: flex;
   gap: 16px;
   position: relative;
@@ -159,4 +162,9 @@
 @keyframes shineButton {
   0% { transform: translateX(-150%); }
   100% { transform: translateX(150%); }
+}
+
+.navbar{
+  /* justify-content: center; */
+  /* align-items: center; */
 }
