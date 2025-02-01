@@ -103,7 +103,7 @@ func (h *Handler) SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	// Start heartbeat to keep connection alive
-	heartbeatTicker := time.NewTicker(5 * time.Second) // More frequent heartbeats
+	heartbeatTicker := time.NewTicker(1 * time.Second) // More frequent heartbeats
 	defer heartbeatTicker.Stop()
 
 	assistantResponse := ""
