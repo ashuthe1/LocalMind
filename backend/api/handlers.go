@@ -62,7 +62,8 @@ func (h *Handler) SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		logger.Log.Errorf("Invalid request payload: %v", err)
+		logger.Log.Errorf("User Prompt is required")
+		// logger.Log.Error("Invalid request payload: %v", err)
 		http.Error(w, "Invalid payload", http.StatusBadRequest)
 		return
 	}
