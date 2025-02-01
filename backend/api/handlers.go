@@ -29,7 +29,6 @@ func NewHandler(chatService *services.ChatService, ollamaService *services.Ollam
 	}
 }
 
-// SendMessageHandler handles sending a message and streaming the response from the LLM via SSE.
 func (h *Handler) SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Message string `json:"message"`
@@ -101,21 +100,7 @@ func (h *Handler) SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Start heartbeat to keep connection alive
 	heartbeatTicker := time.NewTicker(10 * time.Second)
-	go func() {
-		for {
-			select {
-			case <-heartbeatTicker.C:
-				if _, err := w.Write([]byte("data: \n\n")); err != nil {
-					log.Println("Error sending heartbeat:", err)
-					return
-				}
-				flusher.Flush()
-			case <-doneCh:
-				log.Println("Stopping heartbeat goroutine")
-				return
-			}
-		}
-	}()
+	defer heartbeatTicker.Stop() // Ensure cleanup
 
 	assistantResponse := ""
 
@@ -139,29 +124,29 @@ func (h *Handler) SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Stream response from Ollama
 	err = h.OllamaService.StreamResponse(req.Message, config.ModelName, sendChunk)
-	close(doneCh)
-	heartbeatTicker.Stop()
 
 	if err != nil {
 		log.Println("Error streaming response from LLM:", err)
 		sendChunk("[ERROR] Failed to complete response.")
-		return
 	}
 
-	// Save assistant's response
-	assistantMessage := models.Message{
-		ID:        primitive.NewObjectID(),
-		Role:      "assistant",
-		Content:   assistantResponse,
-		Timestamp: time.Now(),
-	}
-	if err := h.ChatService.AddMessage(chatID, assistantMessage); err != nil {
-		log.Println("Error adding assistant message:", err)
+	// Save assistant's response only if streaming was successful
+	if assistantResponse != "" {
+		assistantMessage := models.Message{
+			ID:        primitive.NewObjectID(),
+			Role:      "assistant",
+			Content:   assistantResponse,
+			Timestamp: time.Now(),
+		}
+		if err := h.ChatService.AddMessage(chatID, assistantMessage); err != nil {
+			log.Println("Error adding assistant message:", err)
+		}
 	}
 
 	_, _ = w.Write([]byte("event: complete\ndata: done\n\n"))
 	flusher.Flush()
 }
+
 
 // GetChatsHandler retrieves all chats.
 func (h *Handler) GetChatsHandler(w http.ResponseWriter, r *http.Request) {

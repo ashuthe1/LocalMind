@@ -39,7 +39,6 @@ func (s *OllamaService) GenerateResponse(prompt string, model string) (string, e
 	return response, nil
 }
 
-// StreamResponse streams the response from the Ollama model by reading its stdout in chunks.
 func (s *OllamaService) StreamResponse(prompt string, model string, sendChunk func(chunk string) error) error {
 	log.Println("Starting Ollama streaming process...")
 
@@ -57,6 +56,8 @@ func (s *OllamaService) StreamResponse(prompt string, model string, sendChunk fu
 		return err
 	}
 
+	defer cmd.Wait() // Ensure process cleanup
+
 	reader := bufio.NewReader(stdout)
 	for {
 		chunk, err := reader.ReadString('\n')
@@ -73,11 +74,6 @@ func (s *OllamaService) StreamResponse(prompt string, model string, sendChunk fu
 			log.Println("Error in sendChunk:", err)
 			return fmt.Errorf("failed to send chunk: %w", err)
 		}
-	}
-
-	if err := cmd.Wait(); err != nil {
-		log.Println("Ollama process exited with error:", err)
-		return err
 	}
 
 	log.Println("Ollama streaming completed successfully")
