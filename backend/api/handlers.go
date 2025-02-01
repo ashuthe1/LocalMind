@@ -129,7 +129,11 @@ func (h *Handler) SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 	heartbeatTicker.Stop()
 
 	if err != nil {
-		http.Error(w, "Failed to stream response from LLM", http.StatusInternalServerError)
+		log.Println("Failed to stream response from LLM:", err)
+		
+		// Since we've already started streaming, we cannot call http.Error().
+		// Instead, send an SSE event indicating failure.
+		sendChunk("[ERROR] Failed to complete response.") // Send error as SSE message
 		return
 	}
 
