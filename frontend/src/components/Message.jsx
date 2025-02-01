@@ -6,7 +6,7 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { materialDark, materialLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import '../styles/Message.css';
 
-const defaultThought = 'This question is straightforward, so I won’t need to think much before answering. It’s clear and simple, just how I like it! No need for overthinking—I"ll give a quick and direct response.';
+const defaultThought = 'This is where my thoughts will appear if I have to deeply think about any problem, otherwise this field will be empty or show the default text. It helps keep things organized and simple when no deep analysis is needed.';
 const isValidTimestamp = (timestamp) => {
   const date = new Date(timestamp);
   return !isNaN(date) && date.getFullYear() > 1;
@@ -74,7 +74,7 @@ const Message = ({ message, darkMode }) => {
   return (
     <div className={`message ${message.role} ${darkMode ? 'dark' : 'light'}`}>
       <span className="message-icon">
-        {message.role === 'user' ? '🙍🏻‍♂️' : '👱🏻‍♀️ Smriti '}
+        {message.role === 'user' ? '👨🏻‍💻' : '👱🏻‍♀️ Smriti '}
       </span>
       {renderContent()}
       {timestamp && <div className="timestamp">{timestamp}</div>}
