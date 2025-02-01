@@ -145,11 +145,9 @@ const SettingForm = () => {
   const [aboutMe, setAboutMe] = useState('');
   const [preferences, setPreferences] = useState('');
 
-  const userId = localStorage.getItem('userId') || 'ashuthe1';
-
   // Fetch user settings on component mount.
   useEffect(() => {
-    api.getUserSettings(userId)
+    api.getUserSettings()
       .then((data) => {
         if (data) {
           setAboutMe(data.aboutMe || '');
@@ -159,12 +157,12 @@ const SettingForm = () => {
       .catch((error) => {
         console.error("Error fetching user settings:", error);
       });
-  }, [userId]);
+  },);
 
   // When the user saves, update the settings via the API.
   const handleSave = async () => {
     try {
-      await api.updateUserSettings(userId, aboutMe, preferences);
+      await api.updateUserSettings(aboutMe, preferences);
       alert('Settings updated successfully!');
     } catch (error) {
       console.error("Error updating settings:", error);

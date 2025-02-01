@@ -6,6 +6,7 @@ import (
 	"context"
 	"log"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -30,9 +31,17 @@ type Config struct {
 // otherwise uses environment variables or defaults.
 func LoadConfig() *Config {
 	// Load environment variables from .env file if it exists
-	err := godotenv.Load()
+	homeDir, err := os.UserHomeDir()
 	if err != nil {
-		log.Println("No .env file found or failed to load it. Continuing with environment variables or defaults.")
+		log.Fatalf("Failed to get home directory: %v", err)
+	}
+
+	// Define the path to the .env file (e.g., $HOME/../.. translates to two levels up)
+	PATH := filepath.Join(homeDir, "Learnings", "LocalMind", ".env")
+	log.Println("Path: ", PATH)
+	err = godotenv.Load(PATH)
+	if err != nil {
+		log.Println("No .env file found or failed to load it. Continuing without environment variables or defaults.")
 	}
 
 	ModelName = getEnv("MODEL_NAME", "deepseek-r1:8b")

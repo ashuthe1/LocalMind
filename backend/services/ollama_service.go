@@ -7,8 +7,9 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"log"
 	"os/exec"
+
+	"github.com/ashuthe1/localmind/logger"
 )
 
 type OllamaService struct{}
@@ -40,19 +41,19 @@ func (s *OllamaService) GenerateResponse(prompt string, model string) (string, e
 }
 
 func (s *OllamaService) StreamResponse(prompt string, model string, sendChunk func(chunk string) error) error {
-	log.Println("Starting Ollama streaming process...")
+	// log.Println("Starting Ollama streaming process...")
 
 	cmd := exec.Command("ollama", "run", model)
 	cmd.Stdin = bytes.NewBufferString(prompt)
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		log.Println("Error getting stdout pipe:", err)
+		logger.Log.Errorf("Error getting stdout pipe: %v", err)
 		return err
 	}
 
 	if err := cmd.Start(); err != nil {
-		log.Println("Error starting Ollama process:", err)
+		logger.Log.Errorf("Error starting Ollama process: %v", err)
 		return err
 	}
 
@@ -63,19 +64,18 @@ func (s *OllamaService) StreamResponse(prompt string, model string, sendChunk fu
 		chunk, err := reader.ReadString('\n')
 		if err != nil {
 			if err == io.EOF {
-				log.Println("End of Ollama output stream")
+				// log.Println("End of Ollama output stream")
 				break
 			}
-			log.Println("Error reading from Ollama stream:", err)
+			logger.Log.Errorf("Error reading from Ollama stream: %v", err)
 			return err
 		}
 
 		if err := sendChunk(chunk); err != nil {
-			log.Println("Error in sendChunk:", err)
+			logger.Log.Errorf("Error in sendChunk: %v", err)
 			return fmt.Errorf("failed to send chunk: %w", err)
 		}
 	}
 
-	log.Println("Ollama streaming completed successfully")
 	return nil
 }

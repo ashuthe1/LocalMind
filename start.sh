@@ -1,4 +1,18 @@
+source .env
+
 echo "🚀 Starting backend and frontend..."
+
+INIT=false
+
+# Check for --init flag
+if [[ "$1" == "--init" ]]; then
+  INIT=true
+fi
+
+if [ -z "$USERNAME" ]; then
+  echo "⚠️ USERNAME not found in .env file! Using default 'guest'."
+  USERNAME="guest"
+fi
 
 # Start Frontend (React + Vite)
 start_frontend() {
@@ -30,7 +44,46 @@ start_backend() {
   cd ..
 }
 
+# Initialize user and generate a message
+initialize() {
+  echo "🔄 Initializing user and generating a message..."
+
+  # Wait a bit to ensure the backend is running
+  sleep 5  
+
+  echo "👤 Creating user: $USERNAME"
+  curl --location 'http://localhost:8080/api/create-user' \
+    --header 'Content-Type: application/json' \
+    --data "{
+      \"username\": \"$USERNAME\",
+      \"aboutMe\": \"\"
+    }" > /dev/null 2>&1
+
+  echo "💬 Sending initial message..."
+  curl --location 'http://localhost:8080/api/chat' \
+    --header 'Content-Type: application/json' \
+    --data "{
+      \"message\": \"Hello\"
+    }" > /dev/null 2>&1
+
+  echo "🚀 Initialization Setup Completed, App is running on port 5173 ツ"
+  sleep 5 
+
+  # Open localhost:5173 in the default web browser
+  if command -v xdg-open > /dev/null; then
+    xdg-open http://localhost:5173  # Linux
+  elif command -v open > /dev/null; then
+    open http://localhost:5173  # macOS
+  else
+    echo "⚠️ Unable to open browser. Please open http://localhost:5173 manually."
+  fi
+}
+
 start_frontend
 start_backend
+
+if $INIT; then
+  initialize
+fi
 
 wait

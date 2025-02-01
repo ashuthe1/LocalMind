@@ -23,7 +23,7 @@ var totalThreads = 0
 type Handler struct {
 	ChatService   *services.ChatService
 	OllamaService *services.OllamaService
-	UserService   *services.UserService // <-- New field
+	UserService   *services.UserService
 }
 
 // NewHandler creates a new Handler instance.
@@ -129,7 +129,7 @@ func (h *Handler) SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 	go func() {
 		<-ctx.Done()
 		once.Do(func() {
-			log.Println("Client disconnected, stopping SSE stream...")
+			logger.Log.Println("Client disconnected, stopping SSE stream...")
 			close(doneCh)
 		})
 	}()
@@ -146,13 +146,12 @@ func (h *Handler) SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 			select {
 			case <-heartbeatTicker.C:
 				if _, err := w.Write([]byte("data: \n\n")); err != nil {
-					log.Println("Error sending heartbeat:", err)
+					logger.Log.Printf("Error sending heartbeat: %v", err)
 					once.Do(func() { close(doneCh) }) // Ensure doneCh is closed only once
 					return
 				}
 				flusher.Flush()
 			case <-doneCh:
-				log.Println("Stopping heartbeat goroutine")
 				return
 			}
 		}
@@ -166,12 +165,11 @@ func (h *Handler) SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 		default:
 			_, err := w.Write([]byte("data: " + chunk + "\n\n"))
 			if err != nil {
-				log.Println("Error sending chunk:", err)
+				logger.Log.Println("Error sending chunk:", err)
 				once.Do(func() { close(doneCh) }) // Ensure doneCh is closed only once
 				return err
 			}
 			flusher.Flush()
-			log.Println("Sent SSE chunk:", chunk)
 			assistantResponse += chunk
 			return nil
 		}
@@ -179,13 +177,12 @@ func (h *Handler) SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Update: Generate User Aware Prompt
 	finalPrompt := h.UserService.UserRepo.GenerateUserAwarePrompt(req.Message)
-	fmt.Println("Final Prompt: ", finalPrompt)
 
 	// Stream response from Ollama
 	err = h.OllamaService.StreamResponse(finalPrompt, config.ModelName, sendChunk)
 
 	if err != nil {
-		log.Println("Error streaming response from LLM:", err)
+		logger.Log.Errorf("Error streaming response from LLM: %v", err)
 		sendChunk("[ERROR] Failed to complete response.")
 	}
 
@@ -198,7 +195,7 @@ func (h *Handler) SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 			Timestamp: time.Now(),
 		}
 		if err := h.ChatService.AddMessage(chatID, assistantMessage); err != nil {
-			log.Println("Error adding assistant message:", err)
+			logger.Log.Errorf("Error adding assistant message: %v", err)
 		}
 	}
 
@@ -289,6 +286,13 @@ func (h *Handler) CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 		req.Username = config.UserName
 	}
 
+	// Check if user already exists
+	existingUser, err := h.UserService.UserRepo.GetUserByUsername(req.Username)
+	if err == nil && existingUser != nil {
+		http.Error(w, "Username already exists", http.StatusConflict)
+		return
+	}
+
 	// Create a new user model
 	user := models.User{
 		ID:        primitive.NewObjectID(),
@@ -299,7 +303,7 @@ func (h *Handler) CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Insert user into database
-	err := h.UserService.UserRepo.CreateUser(&user)
+	err = h.UserService.UserRepo.CreateUser(&user)
 	if err != nil {
 		http.Error(w, "Failed to create user", http.StatusInternalServerError)
 		return

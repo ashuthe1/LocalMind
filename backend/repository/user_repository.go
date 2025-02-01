@@ -88,7 +88,5 @@ func (r *UserRepository) GenerateUserAwarePrompt(originalPrompt string) string {
 		userInfoText = fmt.Sprintf("User info: %s. If required, use this knowledge before answering the question.", strings.Join(userInfo, ", "))
 	}
 
-	fmt.Println("UserInfoText: ", userInfoText)
-
 	return fmt.Sprintf("%s\n\n%s", userInfoText, originalPrompt)
 }
