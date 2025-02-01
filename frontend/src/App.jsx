@@ -138,7 +138,7 @@ function App() {
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <div className={`app ${darkMode ? 'dark' : 'light'}`}>
-          <Fab
+          {/* <Fab
             color="primary"
             className="floating-new-chat"
             onClick={() => {
@@ -147,7 +147,7 @@ function App() {
             }}
           >
             <Add />
-          </Fab>
+          </Fab> */}
 
           <header className="app-header">
             <h1>LocalMind✨</h1>

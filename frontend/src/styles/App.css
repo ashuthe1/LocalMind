@@ -92,7 +92,7 @@
 .floating-new-chat {
   position: fixed !important;
   bottom: 30px;
-  left: 300px;
+  left: 260px;
   z-index: 1000;
   transition: transform 0.3s ease !important;
 }
