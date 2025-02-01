@@ -25,5 +25,53 @@ export const api = {
   async deleteAllChats() {
     const response = await axios.delete(`${API_BASE_URL}/chats`);
     return response.data;
+  },
+  
+  async sendMessageSSE(message, chatId, onChunk) {
+    const requestBody = { message, model: "deepseek" };
+    if (chatId) {
+      requestBody.chatId = chatId;
+    }
+    // Use fetch so that we can access the response stream.
+    const response = await fetch(`${API_BASE_URL}/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(requestBody)
+    });
+    if (!response.ok) {
+      throw new Error("Network response error");
+    }
+
+    // Get a reader from the response body
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      // Decode the received chunk and append to buffer.
+      buffer += decoder.decode(value, { stream: true });
+      
+      // SSE events are separated by double newlines.
+      const parts = buffer.split("\n\n");
+      // Keep the last partial part in the buffer.
+      buffer = parts.pop();
+      
+      parts.forEach(part => {
+        // Each SSE event line starts with "data: "
+        if (part.startsWith("data: ")) {
+          const data = part.replace("data: ", "").trim();
+          if (data) {
+            onChunk(data);
+          }
+        }
+      });
+    }
+    // Process any remaining text.
+    if (buffer.startsWith("data: ")) {
+      const data = buffer.replace("data: ", "").trim();
+      if (data) onChunk(data);
+    }
   }
 };

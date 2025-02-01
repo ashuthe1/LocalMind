@@ -5,6 +5,7 @@ package api
 import (
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/ashuthe1/localmind/config"
 	"github.com/ashuthe1/localmind/models"
@@ -26,7 +27,7 @@ func NewHandler(chatService *services.ChatService, ollamaService *services.Ollam
 	}
 }
 
-// SendMessageHandler handles sending a message and getting the response from the LLM.
+// SendMessageHandler handles sending a message and streaming the response from the LLM via SSE.
 func (h *Handler) SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Message string `json:"message"`
@@ -63,42 +64,62 @@ func (h *Handler) SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Add user's message to chat
 	userMessage := models.Message{
-		ID:      primitive.NewObjectID(),
-		Role:    "user",
-		Content: req.Message,
+		ID:        primitive.NewObjectID(),
+		Role:      "user",
+		Content:   req.Message,
+		Timestamp: time.Now(),
 	}
 	if err := h.ChatService.AddMessage(chatID, userMessage); err != nil {
 		http.Error(w, "Failed to add user message", http.StatusInternalServerError)
 		return
 	}
 
-	// Generate response from Ollama LLM
-	response, err := h.OllamaService.GenerateResponse(req.Message, config.ModelName)
-	if err != nil {
-		http.Error(w, "Failed to generate response from LLM", http.StatusInternalServerError)
+	// Set headers for Server Sent Events (SSE)
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+
+	// Ensure the writer supports flushing.
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		http.Error(w, "Streaming unsupported!", http.StatusInternalServerError)
 		return
 	}
 
-	// Add assistant's message to chat
+	assistantResponse := ""
+
+	// Define a callback function to send each chunk as an SSE event.
+	sendChunk := func(chunk string) error {
+		// Write the chunk as an SSE data event.
+		_, err := w.Write([]byte("data: " + chunk + "\n\n"))
+		if err != nil {
+			return err
+		}
+		assistantResponse += chunk
+		flusher.Flush()
+		return nil
+	}
+
+	// Stream response from the Ollama model.
+	if err := h.OllamaService.StreamResponse(req.Message, config.ModelName, sendChunk); err != nil {
+		http.Error(w, "Failed to stream response from LLM", http.StatusInternalServerError)
+		return
+	}
+
+	// After streaming is complete, add the assistant's full message to the chat.
 	assistantMessage := models.Message{
-		ID:      primitive.NewObjectID(),
-		Role:    "assistant",
-		Content: response,
+		ID:        primitive.NewObjectID(),
+		Role:      "assistant",
+		Content:   assistantResponse,
+		Timestamp: time.Now(),
 	}
 	if err := h.ChatService.AddMessage(chatID, assistantMessage); err != nil {
-		http.Error(w, "Failed to add assistant message", http.StatusInternalServerError)
-		return
+		// Log the error if needed, but the client already received the stream.
 	}
 
-	// Return the updated chat
-	chat, err := h.ChatService.GetChatByID(chatID)
-	if err != nil {
-		http.Error(w, "Failed to retrieve chat", http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(chat)
+	// Optionally, send a final SSE event indicating completion.
+	_, _ = w.Write([]byte("event: complete\ndata: done\n\n"))
+	flusher.Flush()
 }
 
 // GetChatsHandler retrieves all chats.

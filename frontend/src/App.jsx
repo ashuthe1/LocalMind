@@ -45,7 +45,7 @@ function App() {
 
   useEffect(() => {
     scrollToBottom();
-  }, [selectedChatId, isAIResponding]);
+  }, [selectedChatId, isAIResponding, chats]);
 
   const fetchChats = async () => {
     try {
@@ -65,13 +65,47 @@ function App() {
 
     setLoading(true);
     setIsAIResponding(true);
+
+    // Append an empty assistant message locally so that we can update it in real time.
+    setChats((prevChats) => {
+      return prevChats.map((chat) => {
+        if (chat.id === selectedChatId) {
+          return {
+            ...chat,
+            messages: [
+              ...chat.messages,
+              { id: "temp-id", role: "assistant", content: "", timestamp: new Date().toISOString() }
+            ]
+          };
+        }
+        return chat;
+      });
+    });
+
     try {
-      await api.sendMessage(message, selectedChatId);
-      setMessage('');
+      // Call the new SSE-based API method.
+      await api.sendMessageSSE(message, selectedChatId, (chunk) => {
+        // Update the last assistant message with the new chunk.
+        setChats((prevChats) =>
+          prevChats.map((chat) => {
+            if (chat.id === selectedChatId) {
+              const updatedMessages = [...chat.messages];
+              const lastIndex = updatedMessages.length - 1;
+              if (updatedMessages[lastIndex].role === "assistant") {
+                updatedMessages[lastIndex].content += chunk;
+              }
+              return { ...chat, messages: updatedMessages };
+            }
+            return chat;
+          })
+        );
+      });
+      // Optionally, refresh chats from the backend after stream completion.
       await fetchChats();
     } catch (error) {
       console.error('Error sending message:', error);
     }
+    setMessage('');
     setLoading(false);
     setIsAIResponding(false);
   };
