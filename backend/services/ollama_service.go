@@ -5,6 +5,7 @@ package services
 import (
 	"bufio"
 	"bytes"
+	"fmt"
 	"io"
 	"log"
 	"os/exec"
@@ -37,22 +38,22 @@ func (s *OllamaService) GenerateResponse(prompt string, model string) (string, e
 	response := out.String()
 	return response, nil
 }
-func (s *OllamaService) StreamResponse(prompt string, model string, sendChunk func(chunk string) error) error {
-	log.Println("Starting Ollama model execution.")
-	cmd := exec.Command("ollama", "run", model)
 
+// StreamResponse streams the response from the Ollama model by reading its stdout in chunks.
+func (s *OllamaService) StreamResponse(prompt string, model string, sendChunk func(chunk string) error) error {
+	log.Println("Starting Ollama streaming process...")
+
+	cmd := exec.Command("ollama", "run", model)
 	cmd.Stdin = bytes.NewBufferString(prompt)
 
-	// Get output stream
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		log.Println("Error getting stdout pipe:", err)
 		return err
 	}
 
-	// Start command
 	if err := cmd.Start(); err != nil {
-		log.Println("Error starting Ollama command:", err)
+		log.Println("Error starting Ollama process:", err)
 		return err
 	}
 
@@ -61,27 +62,24 @@ func (s *OllamaService) StreamResponse(prompt string, model string, sendChunk fu
 		chunk, err := reader.ReadString('\n')
 		if err != nil {
 			if err == io.EOF {
-				log.Println("Reached end of Ollama output stream.")
+				log.Println("End of Ollama output stream")
 				break
 			}
-			log.Println("Error reading from Ollama stdout:", err)
+			log.Println("Error reading from Ollama stream:", err)
 			return err
 		}
 
-		// Send the chunk
 		if err := sendChunk(chunk); err != nil {
-			log.Println("Error sending chunk:", err)
-			return err
+			log.Println("Error in sendChunk:", err)
+			return fmt.Errorf("failed to send chunk: %w", err)
 		}
 	}
 
-	// Wait for command completion
-	err = cmd.Wait()
-	if err != nil {
+	if err := cmd.Wait(); err != nil {
 		log.Println("Ollama process exited with error:", err)
 		return err
 	}
 
-	log.Println("Ollama response streaming complete.")
+	log.Println("Ollama streaming completed successfully")
 	return nil
 }
