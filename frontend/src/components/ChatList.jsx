@@ -1,3 +1,4 @@
+/* File: src/components/ChatList.jsx*/
 import React from 'react';
 import { List, ListItem, ListItemText, IconButton, Button } from '@mui/material';
 import { Add, Delete, History, Bookmark } from '@mui/icons-material';
