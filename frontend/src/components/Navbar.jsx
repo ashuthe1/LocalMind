@@ -1,6 +1,7 @@
 // src/components/Navbar.jsx
 import React from 'react';
-import { MessageCircle, Settings, Sun, Moon } from 'lucide-react';
+import { MessageCircle, Settings, Sun, Moon, ShieldCheck } from 'lucide-react';
+<ShieldCheck />
 import '../styles/Navbar.css';
 
 const Navbar = ({ darkMode, toggleTheme, activeView, setActiveView }) => {
@@ -9,14 +10,25 @@ const Navbar = ({ darkMode, toggleTheme, activeView, setActiveView }) => {
       {/* Animated background gradient for the entire navbar */}
       <div className="navbar-background-animation"></div>
 
-      <div className="navbar-brand">
-        <div className="brand-box">
-          <h3>LocalMind✨</h3>
-        </div>
-      </div>
-      {/* <h2>LocalMind✨</h2> */}
+      <button
+          onClick={() => setActiveView('chat')}
+          className={`navbar-btn ${activeView === 'chat' ? 'active' : ''} navLeft`}
+        >
+          <ShieldCheck size={20} />
+          <span>LocalMind✨</span>
+      </button>
 
       <div className="navbar-buttons">
+
+
+      {/* <button
+          onClick={() => setActiveView('chat')}
+          className={`navbar-btn ${activeView === 'chat' ? 'active' : ''}`}
+        >
+          <ShieldCheck size={40} />
+          <span>LocalMind✨</span>
+      </button> */}
+
         <button
           onClick={() => setActiveView('chat')}
           className={`navbar-btn ${activeView === 'chat' ? 'active' : ''}`}

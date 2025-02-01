@@ -54,6 +54,7 @@
   position: relative;
   margin-left: 5%;
   z-index: 1;
+  cursor: pointer;
 }
 
 .brand-box {
@@ -100,12 +101,17 @@
 /* -------------------------------------------
    Navbar Buttons (Dark-Themed Styling)
 --------------------------------------------- */
+
+.navLeft {
+  margin-left: 30%;
+}
 .navbar-buttons {
   margin-right: 5%;
   display: flex;
   gap: 16px;
   position: relative;
   z-index: 1;
+  margin-right: 30%;
 }
 
 .navbar-btn {
@@ -164,7 +170,7 @@
   100% { transform: translateX(150%); }
 }
 
-.navbar{
-  /* justify-content: center; */
-  /* align-items: center; */
-}
+/* .navbar {
+  justify-content: center;
+  align-items: center;
+} */
