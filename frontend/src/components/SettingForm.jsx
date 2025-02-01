@@ -145,8 +145,7 @@ const SettingForm = () => {
   const [aboutMe, setAboutMe] = useState('');
   const [preferences, setPreferences] = useState('');
 
-  // Assume you have a userId available. Replace this with your actual logic.
-  const userId = localStorage.getItem('userId') || '679e15c96fe1952a54bba9c4';
+  const userId = localStorage.getItem('userId') || 'ashuthe1';
 
   // Fetch user settings on component mount.
   useEffect(() => {

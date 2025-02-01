@@ -14,6 +14,8 @@ import (
 )
 
 var ModelName string
+var UserName string
+var UserId string
 
 // Config holds the configuration values.
 type Config struct {
@@ -21,6 +23,7 @@ type Config struct {
 	MongoURI      string
 	DatabaseName  string
 	ModelName     string
+	UserName      string
 }
 
 // LoadConfig loads configuration from a .env file if present,
@@ -33,12 +36,14 @@ func LoadConfig() *Config {
 	}
 
 	ModelName = getEnv("MODEL_NAME", "deepseek-r1:8b")
+	UserName = getEnv("USERNAME", "ashuthe1")
 
 	return &Config{
 		ServerAddress: getEnv("SERVER_ADDRESS", ":8080"),
 		MongoURI:      getEnv("MONGO_URI", "mongodb://localhost:27017"),
 		DatabaseName:  getEnv("DATABASE_NAME", "ollama_db"),
 		ModelName:     getEnv("MODEL_NAME", "deepseek-r1:8b"),
+		UserName:      getEnv("USERNAME", "ashuthe1"),
 	}
 }
 

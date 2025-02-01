@@ -89,6 +89,7 @@ export const api = {
 
    // New method: GET user settings.
    async getUserSettings(userId) {
+    console.log('userID: ', userId)
     const response = await axios.get(`${API_BASE_URL}/user`, {
       params: { userId }
     });
@@ -98,6 +99,7 @@ export const api = {
   // New method: PUT (update) user settings.
   async updateUserSettings(userId, aboutMe, preferences) {
     const payload = { userId, aboutMe, preferences };
+    console.log('userID: ', userId)
     const response = await axios.put(`${API_BASE_URL}/user`, payload);
     return response.data;
   }

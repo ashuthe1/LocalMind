@@ -21,8 +21,8 @@ func (s *UserService) GetUserByID(id primitive.ObjectID) (*models.User, error) {
 }
 
 // UpdateUserSettings overwrites AboutMe and Preferences fields.
-func (s *UserService) UpdateUserSettings(id primitive.ObjectID, aboutMe, preferences string) error {
-	user, err := s.UserRepo.GetUserByID(id)
+func (s *UserService) UpdateUserSettings(username string, aboutMe, preferences string) error {
+	user, err := s.UserRepo.GetUserByUsername(username)
 	if err != nil {
 		return err
 	}

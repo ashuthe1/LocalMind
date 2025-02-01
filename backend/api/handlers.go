@@ -177,8 +177,12 @@ func (h *Handler) SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Update: Generate User Aware Prompt
+	finalPrompt := h.UserService.UserRepo.GenerateUserAwarePrompt(req.Message)
+	fmt.Println("Final Prompt: ", finalPrompt)
+
 	// Stream response from Ollama
-	err = h.OllamaService.StreamResponse(req.Message, config.ModelName, sendChunk)
+	err = h.OllamaService.StreamResponse(finalPrompt, config.ModelName, sendChunk)
 
 	if err != nil {
 		log.Println("Error streaming response from LLM:", err)
@@ -253,19 +257,12 @@ func (h *Handler) DeleteAllChatsHandler(w http.ResponseWriter, r *http.Request) 
 
 func (h *Handler) GetUserSettingsHandler(w http.ResponseWriter, r *http.Request) {
 	// Expecting a query parameter: /api/user?userId=<user-id>
-	userIdStr := r.URL.Query().Get("userId")
-	if userIdStr == "" {
-		http.Error(w, "User ID is required", http.StatusBadRequest)
-		return
+	userID := r.URL.Query().Get("userId")
+	if userID == "" {
+		userID = config.UserName
 	}
 
-	userID, err := primitive.ObjectIDFromHex(userIdStr)
-	if err != nil {
-		http.Error(w, "Invalid user ID", http.StatusBadRequest)
-		return
-	}
-
-	user, err := h.UserService.GetUserByID(userID)
+	user, err := h.UserService.UserRepo.GetUserByUsername(userID)
 	if err != nil {
 		http.Error(w, "User not found", http.StatusNotFound)
 		return
@@ -288,10 +285,8 @@ func (h *Handler) CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Ensure username is provided
 	if req.Username == "" {
-		http.Error(w, "Username is required", http.StatusBadRequest)
-		return
+		req.Username = config.UserName
 	}
 
 	// Create a new user model
@@ -323,7 +318,7 @@ func (h *Handler) CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) UpdateUserSettingsHandler(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		UserId      string `json:"userId"`
+		UserName    string `json:"username"`
 		AboutMe     string `json:"aboutMe"`
 		Preferences string `json:"preferences"`
 	}
@@ -333,19 +328,12 @@ func (h *Handler) UpdateUserSettingsHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	if req.UserId == "" {
-		http.Error(w, "User ID is required", http.StatusBadRequest)
-		return
-	}
-
-	userID, err := primitive.ObjectIDFromHex(req.UserId)
-	if err != nil {
-		http.Error(w, "Invalid user ID", http.StatusBadRequest)
-		return
+	if req.UserName == "" {
+		req.UserName = config.UserName
 	}
 
 	// Directly overwrite values instead of appending
-	err = h.UserService.UpdateUserSettings(userID, req.AboutMe, req.Preferences)
+	err := h.UserService.UpdateUserSettings(req.UserName, req.AboutMe, req.Preferences)
 	if err != nil {
 		http.Error(w, "Failed to update user settings", http.StatusInternalServerError)
 		return
