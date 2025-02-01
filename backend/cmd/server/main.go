@@ -3,16 +3,17 @@
 package main
 
 import (
-	"github.com/ashuthe1/localmind/api"
-	"github.com/ashuthe1/localmind/config"
-	"github.com/ashuthe1/localmind/repository"
-	"github.com/ashuthe1/localmind/services"
 	"context"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"time"
+
+	"github.com/ashuthe1/localmind/api"
+	"github.com/ashuthe1/localmind/config"
+	"github.com/ashuthe1/localmind/repository"
+	"github.com/ashuthe1/localmind/services"
 )
 
 func main() {
@@ -47,8 +48,9 @@ func main() {
 	// Create HTTP Server
 	srv := &http.Server{
 		Addr:         cfg.ServerAddress,
-		WriteTimeout: 15 * time.Second,
-		ReadTimeout:  15 * time.Second,
+		WriteTimeout: 10 * time.Minute,
+		ReadTimeout:  10 * time.Minute,
+		IdleTimeout:  10 * time.Minute,
 		Handler:      router,
 	}
 
