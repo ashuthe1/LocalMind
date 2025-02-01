@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/ashuthe1/localmind/config"
+	"github.com/ashuthe1/localmind/logger"
 	"github.com/ashuthe1/localmind/models"
 	"github.com/ashuthe1/localmind/services"
 	"github.com/gorilla/mux"
@@ -52,7 +53,6 @@ func (h *Handler) CreateDefaultMessage(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to add default message", http.StatusInternalServerError)
 		return
 	}
-	return
 }
 
 func (h *Handler) SendMessageHandler(w http.ResponseWriter, r *http.Request) {
@@ -60,12 +60,15 @@ func (h *Handler) SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 		Message string `json:"message"`
 		ChatID  string `json:"chatId,omitempty"`
 	}
+
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		logger.Log.Errorf("Invalid request payload: %v", err)
+		http.Error(w, "Invalid payload", http.StatusBadRequest)
 		return
 	}
 
 	if req.Message == "" {
+		logger.Log.Errorf("User Prompt is required")
 		http.Error(w, "User Prompt is required", http.StatusBadRequest)
 		return
 	}
@@ -75,7 +78,7 @@ func (h *Handler) SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 	if req.ChatID == "" {
 		chat, err := h.ChatService.CreateChat("New Chat")
 		if err != nil {
-			log.Println("Error creating new chat:", err)
+			logger.Log.Errorf("Error creating new chat: %v", err)
 			http.Error(w, "Failed to create chat", http.StatusInternalServerError)
 			return
 		}
@@ -83,7 +86,7 @@ func (h *Handler) SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		chatID, err = primitive.ObjectIDFromHex(req.ChatID)
 		if err != nil {
-			log.Println("Invalid chat ID:", err)
+			logger.Log.Errorf("Invalid chat ID: %v", err)
 			http.Error(w, "Invalid chat ID", http.StatusBadRequest)
 			return
 		}
@@ -97,7 +100,7 @@ func (h *Handler) SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 		Timestamp: time.Now(),
 	}
 	if err := h.ChatService.AddMessage(chatID, userMessage); err != nil {
-		log.Println("Error adding user message:", err)
+		logger.Log.Errorf("Error adding user message: %v", err)
 		http.Error(w, "Failed to add user message", http.StatusInternalServerError)
 		return
 	}
@@ -110,6 +113,7 @@ func (h *Handler) SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 
 	flusher, ok := w.(http.Flusher)
 	if !ok {
+		logger.Log.Error("Streaming unsupported")
 		http.Error(w, "Streaming unsupported!", http.StatusInternalServerError)
 		return
 	}
