@@ -199,7 +199,7 @@ function App() {
                   disabled={loading || !message.trim()}
                   className="send-button"
                 >
-                  <Send fontSize="small" /> {loading ? 'Sending...' : 'Send'}
+                  <Send fontSize="small" /> {loading ? 'Generating...' : 'Send'}
                 </button>
               </form>
             </div>

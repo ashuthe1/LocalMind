@@ -17,6 +17,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+var totalThreads = 0
+
 type Handler struct {
 	ChatService   *services.ChatService
 	OllamaService *services.OllamaService
@@ -28,6 +30,29 @@ func NewHandler(chatService *services.ChatService, ollamaService *services.Ollam
 		ChatService:   chatService,
 		OllamaService: ollamaService,
 	}
+}
+
+func (h *Handler) CreateDefaultMessage(w http.ResponseWriter, r *http.Request) {
+	chat, err := h.ChatService.CreateChat("Greet User")
+	if err != nil {
+		log.Println("Error creating new chat:", err)
+		http.Error(w, "Failed to create chat", http.StatusInternalServerError)
+		return
+	}
+	chatID := chat.ID
+	userMessage := models.Message{
+		ID:        primitive.NewObjectID(),
+		Role:      "assistant",
+		Content:   "Hi, I'm LocalMind, AI ChatBot running completly locally on your system, with no external dependencies.",
+		Timestamp: time.Now(),
+	}
+
+	if err := h.ChatService.AddMessage(chatID, userMessage); err != nil {
+		log.Println("Error adding default message:", err)
+		http.Error(w, "Failed to add default message", http.StatusInternalServerError)
+		return
+	}
+	return
 }
 
 func (h *Handler) SendMessageHandler(w http.ResponseWriter, r *http.Request) {
@@ -178,6 +203,8 @@ func (h *Handler) GetChatsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	totalThreads = len(chats)
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(chats)
 }
@@ -198,6 +225,10 @@ func (h *Handler) DeleteChatHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if totalThreads == 1 {
+		h.CreateDefaultMessage(w, r)
+	}
+
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -207,6 +238,8 @@ func (h *Handler) DeleteAllChatsHandler(w http.ResponseWriter, r *http.Request) 
 		http.Error(w, "Failed to delete all chats", http.StatusInternalServerError)
 		return
 	}
+
+	h.CreateDefaultMessage(w, r)
 
 	w.WriteHeader(http.StatusNoContent)
 }
