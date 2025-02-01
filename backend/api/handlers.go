@@ -30,17 +30,21 @@ func NewHandler(chatService *services.ChatService, ollamaService *services.Ollam
 
 // SendMessageHandler handles sending a message and streaming the response from the LLM via SSE.
 func (h *Handler) SendMessageHandler(w http.ResponseWriter, r *http.Request) {
+	log.Println("Received a new chat request.")
+
 	var req struct {
 		Message string `json:"message"`
 		ChatID  string `json:"chatId,omitempty"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Println("Error decoding request body:", err)
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
 	// Validate input
 	if req.Message == "" {
+		log.Println("Error: User Prompt is empty.")
 		http.Error(w, "User Prompt is required", http.StatusBadRequest)
 		return
 	}
@@ -48,9 +52,10 @@ func (h *Handler) SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 	var chatID primitive.ObjectID
 	var err error
 	if req.ChatID == "" {
-		// Create a new chat if no chatID is provided
+		log.Println("No chatID provided, creating a new chat.")
 		chat, err := h.ChatService.CreateChat("New Chat")
 		if err != nil {
+			log.Println("Failed to create chat:", err)
 			http.Error(w, "Failed to create chat", http.StatusInternalServerError)
 			return
 		}
@@ -58,12 +63,14 @@ func (h *Handler) SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		chatID, err = primitive.ObjectIDFromHex(req.ChatID)
 		if err != nil {
+			log.Println("Invalid chat ID format:", err)
 			http.Error(w, "Invalid chat ID", http.StatusBadRequest)
 			return
 		}
 	}
 
 	// Add user's message to chat
+	log.Println("Adding user message to chat:", req.Message)
 	userMessage := models.Message{
 		ID:        primitive.NewObjectID(),
 		Role:      "user",
@@ -71,85 +78,90 @@ func (h *Handler) SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 		Timestamp: time.Now(),
 	}
 	if err := h.ChatService.AddMessage(chatID, userMessage); err != nil {
+		log.Println("Failed to store user message:", err)
 		http.Error(w, "Failed to add user message", http.StatusInternalServerError)
 		return
 	}
 
-	// Set headers for Server Sent Events (SSE)
+	// Set headers for SSE
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
 
-	// Ensure the writer supports flushing.
 	flusher, ok := w.(http.Flusher)
 	if !ok {
+		log.Println("Error: HTTP Flusher not supported.")
 		http.Error(w, "Streaming unsupported!", http.StatusInternalServerError)
 		return
 	}
 
 	assistantResponse := ""
 
-	// Define a callback function to send each chunk as an SSE event.
+	// Callback function to send each chunk
 	sendChunk := func(chunk string) error {
+		log.Println("Sending SSE chunk:", chunk)
 		_, err := w.Write([]byte("data: " + chunk + "\n\n"))
 		if err != nil {
-			log.Println("Client disconnected, stopping SSE stream...")
-			return err // Exit the streaming function
+			log.Println("Client disconnected, stopping SSE stream:", err)
+			return err
 		}
 		flusher.Flush()
+		assistantResponse += chunk // Store response for later saving
 		return nil
 	}
 
-	// Start a heartbeat ticker that sends an empty event every 10 seconds
+	// Start heartbeat
 	heartbeatTicker := time.NewTicker(10 * time.Second)
-	// A channel to signal when streaming is done so the ticker can be stopped
 	doneCh := make(chan struct{})
 
 	go func() {
 		for {
 			select {
 			case <-heartbeatTicker.C:
-				// Send a heartbeat event (an empty data event)
+				log.Println("Sending SSE heartbeat.")
 				_, err := w.Write([]byte("data: \n\n"))
 				if err != nil {
-					// If we encounter an error, likely the client has disconnected.
+					log.Println("Client disconnected during heartbeat:", err)
 					return
 				}
 				flusher.Flush()
 			case <-doneCh:
+				log.Println("Stopping heartbeat goroutine.")
 				return
 			}
 		}
 	}()
 
-	// Stream response from the Ollama model.
+	// Stream response from Ollama
+	log.Println("Starting LLM response streaming.")
 	err = h.OllamaService.StreamResponse(req.Message, config.ModelName, sendChunk)
-	// Signal the heartbeat goroutine to stop and stop the ticker.
+
+	// Stop heartbeat ticker
 	close(doneCh)
 	heartbeatTicker.Stop()
 
 	if err != nil {
-		log.Println("Failed to stream response from LLM:", err)
-		
-		// Since we've already started streaming, we cannot call http.Error().
-		// Instead, send an SSE event indicating failure.
-		sendChunk("[ERROR] Failed to complete response.") // Send error as SSE message
+		log.Println("Error streaming response from LLM:", err)
+		sendChunk("[ERROR] Failed to complete response.")
 		return
 	}
 
-	// After streaming is complete, add the assistant's full message to the chat.
-	assistantMessage := models.Message{
-		ID:        primitive.NewObjectID(),
-		Role:      "assistant",
-		Content:   assistantResponse,
-		Timestamp: time.Now(),
-	}
-	if err := h.ChatService.AddMessage(chatID, assistantMessage); err != nil {
-		log.Println("Some error in Adding Message Backend")
-		// Log the error if needed, but the client already received the stream.
+	// Save assistant response to chat
+	if assistantResponse != "" {
+		log.Println("Storing assistant response in chat.")
+		assistantMessage := models.Message{
+			ID:        primitive.NewObjectID(),
+			Role:      "assistant",
+			Content:   assistantResponse,
+			Timestamp: time.Now(),
+		}
+		if err := h.ChatService.AddMessage(chatID, assistantMessage); err != nil {
+			log.Println("Error storing assistant message:", err)
+		}
 	}
 
-	// Optionally, send a final SSE event indicating completion.
+	// Send final SSE event
+	log.Println("Streaming complete, sending 'done' event.")
 	_, _ = w.Write([]byte("event: complete\ndata: done\n\n"))
 	flusher.Flush()
 }
