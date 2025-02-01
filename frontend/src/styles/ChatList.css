@@ -6,32 +6,114 @@
   overflow-y: auto;
   background: var(--bg-color);
   z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 .chat-list.dark {
   background-color: #2d2d2d;
 }
 
-.delete-all-button {
-  margin-bottom: 1rem;
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 1rem;
+  margin-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.sidebar-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--text-color);
+}
+
+.new-chat-sidebar {
   width: 100%;
+  margin-bottom: 0.5rem;
+  background: var(--primary-color) !important;
+  color: white !important;
+  border-radius: 25px !important;
+}
+
+.delete-all-button {
+  width: 100%;
+  margin-bottom: 1rem;
+  border-radius: 25px !important;
 }
 
 .chat-item {
-  padding: 0.8rem;
-  border-radius: 8px;
-  margin-bottom: 0.5rem;
+  padding: 0.8rem !important;
+  border-radius: 12px !important;
+  margin-bottom: 0.5rem !important;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: all 0.3s ease !important;
   background: var(--bg-color) !important;
-  color: var(--text-color);
+  position: relative;
+  padding-left: 40px !important;
 }
 
 .chat-item:hover {
   background: var(--input-bg) !important;
+  transform: translateX(5px);
 }
 
 .chat-item.selected {
   background: var(--primary-color) !important;
   color: white !important;
+}
+
+.chat-item::before {
+  content: '💬';
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0.6;
+}
+
+.chat-item.selected::before {
+  content: '📌';
+  opacity: 1;
+}
+
+.chat-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat-item.selected .chat-title {
+  color: white !important;
+}
+
+.chat-item.selected .MuiListItemText-secondary {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* Scrollbar styling */
+.chat-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chat-list::-webkit-scrollbar-track {
+  background: var(--bg-color);
+}
+
+.chat-list::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+.chat-list.dark::-webkit-scrollbar-thumb {
+  background: #555;
+}
+
+.chat-list::-webkit-scrollbar-thumb:hover {
+  background: #666;
 }
