@@ -1,6 +1,8 @@
 # LocalMind Chat Application
 
-LocalMind is all in one chat application that leverages a modern React frontend and a robust Golang backend to deliver real-time chat experiences with AI-powered responses. In today's digital landscape, many users are increasingly concerned about the data they share with third-party applications such as OpenAI or DeepSeek. LocalMind addresses these concerns by offering an intuitive and sleek user interface similar to leading platforms like ChatGPT, Claude, or Perplexity—while ensuring that **all data is stored locally** in a database provided by the user for persistent reference and privacy.
+Secure app that connects with Deepseek:r1 or other Ollama models, featuring real-time updates and memory-like chatgpt with no external dependencies.
+
+In today's digital landscape, many users are increasingly concerned about the data they share with third-party applications such as OpenAI or DeepSeek. LocalMind addresses these concerns by offering an intuitive and sleek user interface similar to leading platforms like ChatGPT, Claude, or Perplexity—while ensuring that **all data is stored locally** in a database provided by the user for persistent reference and privacy.
 
 The backend uses MongoDB to store chat messages and user information, while integrating with locally hosted OLLAMA models (such as `deepseek-r1:8b`) to generate AI responses. This project is designed to be entirely self-contained with no external dependencies.
 
