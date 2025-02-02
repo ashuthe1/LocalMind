@@ -57,6 +57,15 @@ func (h *Handler) CreateDefaultMessage(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (h *Handler) GenerateTitleForChat(prompt string) string {
+	query := fmt.Sprintf("Give me less than 2 words title for this prompt message: %v", prompt)
+	title, err := h.OllamaService.GenerateResponse(query, config.ModelName)
+	if err != nil {
+		return "New Chat"
+	}
+	return title
+}
+
 func (h *Handler) SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Message string `json:"message"`
@@ -64,8 +73,7 @@ func (h *Handler) SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		logger.Log.Errorf("User Prompt is required")
-		// logger.Log.Error("Invalid request payload: %v", err)
+		logger.Log.Errorf("Invalid payload %v", err)
 		http.Error(w, "Invalid payload", http.StatusBadRequest)
 		return
 	}
@@ -79,7 +87,9 @@ func (h *Handler) SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 	var chatID primitive.ObjectID
 	var err error
 	if req.ChatID == "" {
-		chat, err := h.ChatService.CreateChat("New Chat")
+		// title := h.GenerateTitleForChat(req.Message)
+		title := "New Chat"
+		chat, err := h.ChatService.CreateChat(title)
 		if err != nil {
 			logger.Log.Errorf("Error creating new chat: %v", err)
 			http.Error(w, "Failed to create chat", http.StatusInternalServerError)
