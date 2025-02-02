@@ -55,6 +55,14 @@ func (h *Handler) CreateDefaultMessage(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to add default message", http.StatusInternalServerError)
 		return
 	}
+
+	// // Respond with success
+	// w.Header().Set("Content-Type", "application/json")
+	// w.WriteHeader(http.StatusCreated)
+	// json.NewEncoder(w).Encode(map[string]string{
+	// 	"status":  "success",
+	// 	"message": "Intialized the conversation!",
+	// })
 }
 
 func (h *Handler) GenerateTitleForChat(prompt string) string {

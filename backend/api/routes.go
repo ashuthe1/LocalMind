@@ -13,6 +13,7 @@ func SetupRoutes(handler *Handler) *mux.Router {
 	apiRouter := router.PathPrefix("/api").Subrouter()
 
 	// Chat routes
+	apiRouter.HandleFunc("/chat-init", handler.CreateDefaultMessage).Methods(http.MethodGet)
 	apiRouter.HandleFunc("/chat", handler.SendMessageHandler).Methods(http.MethodPost)
 	apiRouter.HandleFunc("/chats", handler.GetChatsHandler).Methods(http.MethodGet)
 	apiRouter.HandleFunc("/chat/{id}", handler.DeleteChatHandler).Methods(http.MethodDelete)
