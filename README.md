@@ -1,6 +1,14 @@
 # LocalMind Chat Application
 
-LocalMind is a full-stack chat application that leverages a modern React+Vite frontend and a robust Golang backend to deliver real-time chat experiences with AI-powered responses. The backend uses MongoDB to store chat messages, while integrating with locally hosted OLLAMa models (such as `deepseek-r1:8b`) to generate AI responses. This project is designed to be entirely self-contained with no external dependencies.
+LocalMind is all in one chat application that leverages a modern React frontend and a robust Golang backend to deliver real-time chat experiences with AI-powered responses. In today's digital landscape, many users are increasingly concerned about the data they share with third-party applications such as OpenAI or DeepSeek. LocalMind addresses these concerns by offering an intuitive and sleek user interface similar to leading platforms like ChatGPT, Claude, or Perplexity—while ensuring that **all data is stored locally** in a database provided by the user for persistent reference and privacy.
+
+The backend uses MongoDB to store chat messages and user information, while integrating with locally hosted OLLAMA models (such as `deepseek-r1:8b`) to generate AI responses. This project is designed to be entirely self-contained with no external dependencies.
+
+---
+
+## Purpose
+
+Since many of us are worried about our data being shared with third-party apps like OpenAI or DeepSeek for various reasons, this app was built to let users experience the same features offered by major platforms—featuring an intuitive and sleek user interface. LocalMind provides the comprehensive chat experience seen in applications like ChatGPT, Claude, or Perplexity while ensuring **all data is stored in a local database** provided by the user, guaranteeing privacy and persistence for future reference.
 
 ---
 
@@ -22,7 +30,7 @@ LocalMind is a full-stack chat application that leverages a modern React+Vite fr
 - [x] **Full-Stack Integration:** Seamless communication between React+Vite frontend and Golang backend.
 - [x] **Real-Time Chat Updates:** Utilizes Server-Sent Events (SSE) to stream chat updates in real-time.
 - [x] **MongoDB Storage:** Chat messages and user data are persistently stored using MongoDB.
-- [x] **Local OLLAMa Model Integration:** Interact with local AI models like `deepseek-r1:8b` (or any other model you choose).
+- [x] **Local OLLAMA Model Integration:** Interact with local AI models like `deepseek-r1:8b` (or any other model you choose).
 - [x] **User Management:** Create and update user settings (e.g., username, about me, preferences).
 - [x] **Chat Operations:** Create new chats, send messages, list chats, and delete chats.
 - [x] **Initialization Script:** Automates starting both frontend and backend, and initializes a default chat message.
@@ -46,7 +54,7 @@ LocalMind/
 │   ├── cmd/server/main.go   # Server entry point
 │   ├── api/                 # API route handlers
 │   ├── models/              # Data models (User, Chat, Message, etc.)
-│   ├── services/            # Business logic (Chat, Ollama, User services)
+│   ├── services/            # Business logic (Chat, OLLAMA, User services)
 │   └── ...                  # Additional backend files
 ├── frontend/                # React + Vite frontend
 │   ├── src/
@@ -82,6 +90,7 @@ LocalMind/
      ```bash
      ./start.sh
      ```
+
 ---
 
 ## Usage
@@ -97,9 +106,9 @@ LocalMind/
 The backend is implemented in Golang and includes:
 
 - **API Handlers:** Located in `backend/api/handlers.go`, these endpoints handle creating chats, sending messages (with SSE streaming), deleting chats, and managing users.
-- **Services:** Business logic is modularized into services for handling chats, user management, and interaction with local OLLAMa models.
+- **Services:** Business logic is modularized into services for handling chats, user management, and interaction with local OLLAMA models.
 - **MongoDB Integration:** Chat messages and user information are stored in MongoDB for persistence.
-- **Local AI Model Interaction:** The server interacts with local OLLAMa models to generate responses. This can be configured to use any compatible model.
+- **Local AI Model Interaction:** The server interacts with local OLLAMA models to generate responses. This can be configured to use any compatible model.
 
 ---
 
