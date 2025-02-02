@@ -1,44 +1,122 @@
-## **Example Workflow**
+# LocalMind Chat Application
 
-1. **Start a New Chat**: Send a message to create a new chat.
-
-   ```bash
-   curl -X POST http://localhost:8080/api/chat \
-        -H "Content-Type: application/json" \
-        -d '{
-              "message": "What is the weather today?"
-            }'
-   ```
-
-2. **Store the Chat ID**: Note the `id` from the response.
-
-3. **Continue the Chat**: Send another message using the same `chatId`.
-
-   ```bash
-   curl -X POST http://localhost:8080/api/chat \
-        -H "Content-Type: application/json" \
-        -d '{
-              "message": "Will it rain tomorrow?",
-              "chatId": "YOUR_CHAT_ID"
-            }'
-   ```
-
-4. **List All Chats**: Retrieve all chats to see the list of chat sessions.
-
-   ```bash
-   curl -X GET http://localhost:8080/api/chats
-   ```
-
-5. **Delete a Chat**: Remove a specific chat.
-
-   ```bash
-   curl -X DELETE http://localhost:8080/api/chat/YOUR_CHAT_ID
-   ```
-
-6. **Delete All Chats**: Remove all chats from the database.
-
-   ```bash
-   curl -X DELETE http://localhost:8080/api/chats
-   ```
+LocalMind is a full-stack chat application that leverages a modern React+Vite frontend and a robust Golang backend to deliver real-time chat experiences with AI-powered responses. The backend uses MongoDB to store chat messages, while integrating with locally hosted OLLAMa models (such as `deepseek-r1:8b`) to generate AI responses. This project is designed to be entirely self-contained with no external dependencies.
 
 ---
+
+## Table of Contents
+
+- [Features](#features)
+- [Future Scope](#future-scope)
+- [Project Structure](#project-structure)
+- [Setup and Installation](#setup-and-installation)
+- [Usage](#usage)
+- [Backend Overview](#backend-overview)
+- [Frontend Overview](#frontend-overview)
+- [License](#license)
+
+---
+
+## Features
+
+- [x] **Full-Stack Integration:** Seamless communication between React+Vite frontend and Golang backend.
+- [x] **Real-Time Chat Updates:** Utilizes Server-Sent Events (SSE) to stream chat updates in real-time.
+- [x] **MongoDB Storage:** Chat messages and user data are persistently stored using MongoDB.
+- [x] **Local OLLAMa Model Integration:** Interact with local AI models like `deepseek-r1:8b` (or any other model you choose).
+- [x] **User Management:** Create and update user settings (e.g., username, about me, preferences).
+- [x] **Chat Operations:** Create new chats, send messages, list chats, and delete chats.
+- [x] **Initialization Script:** Automates starting both frontend and backend, and initializes a default chat message.
+
+---
+
+## Future Scope
+
+- [ ] **Thread-Aware Context Chatbot:** Enhance conversations with thread-aware contextual responses.
+- [ ] **Semantic Search Implementation:** Integrate semantic search capabilities to improve chat message retrieval.
+- [ ] **Pin Chats:** Allow users to pin important chats for quick access.
+- [ ] **Enhanced User Preferences:** Expand customization options for user settings.
+
+---
+
+## Project Structure
+
+```
+LocalMind/
+├── backend/                 # Golang backend server
+│   ├── cmd/server/main.go   # Server entry point
+│   ├── api/                 # API route handlers
+│   ├── models/              # Data models (User, Chat, Message, etc.)
+│   ├── services/            # Business logic (Chat, Ollama, User services)
+│   └── ...                  # Additional backend files
+├── frontend/                # React + Vite frontend
+│   ├── src/
+│   │   ├── components/      # React components
+│   │   ├── services/        # API services (e.g., api.js for handling SSE and REST calls)
+│   │   └── ...              # Additional frontend files
+├── .env                     # Environment variables file
+└── start.sh                 # Startup script for local development
+```
+
+---
+
+## Setup and Installation
+
+1. **Configure Environment Variables:**
+   - Copy the `.env.example` file in the root directory, rename it to `.env`, and update the variables as per your requirements.
+
+2. **Make the Startup Script Executable:**
+
+   ```bash
+   chmod +x start.sh
+   ```
+
+3. **Run the Project:**
+   - **First Time Usage:** Initialize the model and create a user by running:
+     
+     ```bash
+     ./start.sh --init
+     ```
+     
+   - **Subsequent Runs:** Simply execute:
+     
+     ```bash
+     ./start.sh
+     ```
+---
+
+## Usage
+
+- **Frontend:** The React+Vite frontend runs on [http://localhost:5173](http://localhost:5173) and communicates with the backend via REST and SSE (Server-Sent Events) for real-time updates.
+- **Backend:** The Golang server listens on port `8080` and exposes various endpoints for chat operations, user management, and AI model interactions.
+- **Real-Time Chat:** When a message is sent from the frontend, the backend streams the response using SSE, ensuring a smooth, real-time chat experience.
+
+---
+
+## Backend Overview
+
+The backend is implemented in Golang and includes:
+
+- **API Handlers:** Located in `backend/api/handlers.go`, these endpoints handle creating chats, sending messages (with SSE streaming), deleting chats, and managing users.
+- **Services:** Business logic is modularized into services for handling chats, user management, and interaction with local OLLAMa models.
+- **MongoDB Integration:** Chat messages and user information are stored in MongoDB for persistence.
+- **Local AI Model Interaction:** The server interacts with local OLLAMa models to generate responses. This can be configured to use any compatible model.
+
+---
+
+## Frontend Overview
+
+The frontend is built using React and Vite, featuring:
+
+- **Service Integration:** API calls are managed through `src/services/api.js`, which includes methods for sending messages (with SSE support), retrieving chats, and updating user settings.
+- **Real-Time Updates:** Utilizes Server-Sent Events (SSE) to stream real-time updates to the chat interface.
+- **Modern UI:** Provides a responsive and intuitive interface for chatting with the local AI assistant.
+
+---
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
+
+---
+
+Happy coding and enjoy building with LocalMind! If you have any questions or suggestions, please feel free to contribute or open an issue.
