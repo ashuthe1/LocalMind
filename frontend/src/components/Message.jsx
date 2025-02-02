@@ -18,7 +18,7 @@ const Message = ({ message, darkMode }) => {
   const renderContent = () => {
     if (message.role === 'assistant') {
       const thinkMatch = message.content.match(/<think>(.*?)<\/think>/s);
-      const thinking = thinkMatch ? thinkMatch[1] : defaultThought
+      var thinking = thinkMatch ? thinkMatch[1] : defaultThought
       const finalResponse = message.content.replace(/<think>.*?<\/think>/s, '').trim();
 
       return (

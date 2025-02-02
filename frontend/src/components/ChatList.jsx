@@ -72,7 +72,7 @@ const ChatList = ({ chats, onSelectChat, onDeleteChat, onDeleteAllChats, selecte
               primary={
                 <div className="chat-title">
                   {selectedChatId === chat.id && <Bookmark fontSize="small" />}
-                  {formatDate(chat.createdAt)}
+                  {formatDate(chat.updatedAt)}
                 </div>
               }
               secondary={`${chat.messages?.length || 0} messages`}

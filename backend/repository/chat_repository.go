@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/ashuthe1/localmind/models"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -43,10 +44,14 @@ func (r *ChatRepository) GetChatByID(id primitive.ObjectID) (*models.Chat, error
 	return &chat, nil
 }
 
-// GetAllChats retrieves all chats from the database.
+// GetAllChats retrieves all chats from the database, sorted by recent updates.
 func (r *ChatRepository) GetAllChats() ([]models.Chat, error) {
 	var chats []models.Chat
-	cursor, err := r.collection.Find(context.Background(), bson.M{})
+
+	// Define sorting: -1 for descending order (most recent first)
+	opts := options.Find().SetSort(bson.D{{"updatedAt", -1}})
+
+	cursor, err := r.collection.Find(context.Background(), bson.M{}, opts)
 	if err != nil {
 		return nil, err
 	}
