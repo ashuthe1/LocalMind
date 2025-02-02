@@ -62,7 +62,9 @@ initialize() {
   echo "💬 Sending initial message..."
   curl --location 'http://localhost:8080/api/chat-init' \
     --header 'Content-Type: application/json' \
-    --data '' > /dev/null 2>&1
+    --data "{
+      \"username\": \"$USERNAME\"
+    }" > /dev/null 2>&1
 
   echo "📦 Initialization Setup Completed, App is running on port 5173 ツ"
 }

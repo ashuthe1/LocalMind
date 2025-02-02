@@ -36,6 +36,8 @@ func NewHandler(chatService *services.ChatService, ollamaService *services.Ollam
 }
 
 func (h *Handler) CreateDefaultMessage(w http.ResponseWriter, r *http.Request) {
+
+	username := config.UserName
 	chat, err := h.ChatService.CreateChat("Greet User")
 	if err != nil {
 		log.Println("Error creating new chat:", err)
@@ -43,15 +45,16 @@ func (h *Handler) CreateDefaultMessage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	chatID := chat.ID
+	chatContent := fmt.Sprintf("Hi %v, it's a pleasure to meet you!\n I'm Smriti, an AI chatbot running completely locally on your system with no external dependencies.", username)
 	userMessage := models.Message{
 		ID:        primitive.NewObjectID(),
 		Role:      "assistant",
-		Content:   "Hi, I'm Smriti, an AI chatbot running completely locally on your system with no external dependencies.",
+		Content:   chatContent,
 		Timestamp: time.Now(),
 	}
 
 	if err := h.ChatService.AddMessage(chatID, userMessage); err != nil {
-		log.Println("Error adding default message:", err)
+		logger.Log.Errorf("Error adding default message: %v", err)
 		http.Error(w, "Failed to add default message", http.StatusInternalServerError)
 		return
 	}
