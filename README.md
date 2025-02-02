@@ -1,6 +1,6 @@
 # LocalMind Chat Application
 
-Secure app that connects with Deepseek:r1 or other Ollama models, featuring real-time updates and memory-like chatgpt with no external dependencies.
+Secure app that connects with Deepseek:r1 or other Ollama models, featuring real-time updates and memory-like ChatGPT with no external dependencies.
 
 In today's digital landscape, many users are increasingly concerned about the data they share with third-party applications such as OpenAI or DeepSeek. LocalMind addresses these concerns by offering an intuitive and sleek user interface similar to leading platforms like ChatGPT, Claude, or Perplexity—while ensuring that **all data is stored locally** in a database provided by the user for persistent reference and privacy.
 
@@ -36,6 +36,7 @@ Since many of us are worried about our data being shared with third-party apps l
 - [x] **User Management:** Create and update user settings (e.g., username, about me, preferences).
 - [x] **Chat Operations:** Create new chats, send messages, list chats, and delete chats.
 - [x] **Initialization Script:** Automates starting both frontend and backend, and initializes a default chat message.
+- [x] **Centralised Logging:** Aggregate all server logs in one place to quickly detect and troubleshoot any issues.
 
 ---
 
