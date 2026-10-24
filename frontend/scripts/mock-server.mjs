@@ -46,7 +46,7 @@ const state = {
     assistant: { name: 'Smriti', avatar: '✨' },
     generation: { temperature: 0.7, topP: null, maxTokens: null, contextLength: null, reasoning: 'auto', seed: null, stopSequences: [] },
     features: { autoTitle: true, historyLimit: 40, sendUserProfile: true },
-    appearance: { theme: 'system', accent: '#3f51b5', fontSize: 'medium', codeTheme: 'material', showReasoning: true, showTimestamps: true, sendOnEnter: true, compact: false },
+    appearance: { theme: 'system', accent: '#4f6df5', fontSize: 'medium', showReasoning: true, showTimestamps: true, sendOnEnter: true, compact: false },
     updatedAt: now(),
   },
   providers: [],

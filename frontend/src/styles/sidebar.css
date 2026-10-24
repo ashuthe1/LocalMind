@@ -1,9 +1,9 @@
-/* src/styles/sidebar.css */
+/* src/styles/sidebar.css — plain list sidebar */
 .sidebar {
-  width: 290px;
-  min-width: 290px;
+  width: 260px;
+  min-width: 260px;
   border-right: 1px solid var(--border-color);
-  padding: 12px;
+  padding: 12px 10px;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -12,104 +12,124 @@
   overflow: hidden;
 }
 .sidebar.drawer {
-  width: min(86vw, 340px);
+  width: min(84vw, 320px);
   min-width: 0;
   border-right: none;
 }
-
 .sidebar-actions {
   display: flex;
-  gap: 8px;
+  gap: 6px;
+  align-items: center;
 }
-.sidebar-actions .MuiButton-root {
-  border-radius: 12px !important;
-  text-transform: none !important;
+.sidebar-actions .new-chat {
   flex: 1;
+  justify-content: flex-start;
+  background: transparent;
 }
-
-.sidebar-search .MuiOutlinedInput-root {
-  border-radius: 12px;
-  background: var(--input-bg);
+.sidebar-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  height: 34px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+  background: var(--bg-color);
+  color: var(--text-muted);
 }
-
+.sidebar-search input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--text-color);
+  font: inherit;
+  font-size: 0.9rem;
+}
+.sidebar-search input::placeholder {
+  color: var(--text-muted);
+}
+.sidebar-search .icon-btn {
+  width: 24px;
+  height: 24px;
+}
 .chat-list {
   flex: 1;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding-right: 2px;
+  gap: 1px;
+  margin: 0 -4px;
+  padding: 0 4px;
 }
-
 .chat-section {
   font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--text-muted);
-  padding: 10px 8px 4px;
+  padding: 10px 10px 4px;
 }
-
 .chat-item {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 9px 10px;
-  border-radius: 12px;
+  gap: 8px;
+  padding: 7px 6px 7px 10px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   color: var(--text-color);
   background: transparent;
-  border: 1px solid transparent;
-  transition: background 0.15s, transform 0.15s;
   text-align: left;
   width: 100%;
+  transition: background 0.12s;
 }
 .chat-item:hover {
-  background: var(--surface-2);
+  background: rgba(127, 127, 127, 0.1);
 }
 .chat-item.selected {
-  background: rgba(var(--primary-rgb), 0.16);
-  border-color: rgba(var(--primary-rgb), 0.4);
-}
-.chat-item .chat-icon {
-  color: var(--text-muted);
-  flex-shrink: 0;
-}
-.chat-item.selected .chat-icon {
-  color: var(--primary-color);
+  background: var(--surface-2);
 }
 .chat-item .chat-body {
   flex: 1;
   min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
 }
 .chat-item .chat-title {
+  flex: 1;
+  min-width: 0;
   font-size: 0.92rem;
-  font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.chat-item .chat-meta {
-  font-size: 0.75rem;
+.chat-item .chat-time {
+  font-size: 0.74rem;
   color: var(--text-muted);
-  display: flex;
-  gap: 6px;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 .chat-item .chat-menu-btn {
   opacity: 0;
-  transition: opacity 0.15s;
+  width: 26px;
+  height: 26px;
 }
 .chat-item:hover .chat-menu-btn,
 .chat-item.selected .chat-menu-btn,
 .chat-item.menu-open .chat-menu-btn {
   opacity: 1;
 }
+.chat-item:hover .chat-time,
+.chat-item.menu-open .chat-time {
+  display: none;
+}
 @media (hover: none) {
   .chat-item .chat-menu-btn {
     opacity: 1;
+  }
+  .chat-item .chat-time {
+    display: none;
   }
 }
 .chat-item .rename-input {
@@ -123,14 +143,12 @@
   color: var(--text-color);
   outline: none;
 }
-
 .chat-list-empty {
   text-align: center;
   color: var(--text-muted);
-  font-size: 0.85rem;
+  font-size: 0.86rem;
   padding: 24px 8px;
 }
-
 .sidebar-footer {
   border-top: 1px solid var(--border-color);
   padding-top: 8px;
@@ -139,4 +157,20 @@
   align-items: center;
   font-size: 0.78rem;
   color: var(--text-muted);
+}
+.sidebar-footer .link {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 0.78rem;
+  cursor: pointer;
+  padding: 2px 4px;
+}
+.sidebar-footer .link:hover:not(:disabled) {
+  color: var(--danger);
+}
+.sidebar-footer .link:disabled {
+  opacity: 0.5;
+  cursor: default;
 }

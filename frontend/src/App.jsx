@@ -15,6 +15,8 @@ import MessageList from './components/MessageList';
 import Composer from './components/Composer';
 import EmptyState from './components/EmptyState';
 import SettingsPage from './components/settings/SettingsPage';
+import SetupScreen from './components/SetupScreen';
+import { DEFAULT_ACCENT } from './constants';
 import './styles/App.css';
 import './styles/chat.css';
 
@@ -22,7 +24,7 @@ const FONT_SCALE = { small: 0.92, medium: 1, large: 1.1 };
 
 function hexToRgb(hex) {
   const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex || '');
-  if (!m) return '63, 81, 181';
+  if (!m) return '79, 109, 245';
   return `${parseInt(m[1], 16)}, ${parseInt(m[2], 16)}, ${parseInt(m[3], 16)}`;
 }
 
@@ -47,7 +49,7 @@ function summarize(chat) {
 
 function AppShell() {
   const toast = useToast();
-  const { settings, appearance, refresh: refreshSettings, enabledProviders, updateAppearance, update: updateSettings } = useSettings();
+  const { settings, appearance, loaded: settingsLoaded, refresh: refreshSettings, providers, enabledProviders, updateAppearance, update: updateSettings } = useSettings();
   const isMobile = useMediaQuery('(max-width:767px)');
   const prefersDark = useMediaQuery('(prefers-color-scheme: dark)');
   const isDark = appearance.theme === 'system' ? prefersDark : appearance.theme === 'dark';
@@ -181,6 +183,7 @@ function AppShell() {
   });
 
   const hasProvider = enabledProviders.length > 0;
+  const needsSetup = settingsLoaded && backend.online && providers.length === 0;
 
   const handleSend = useCallback(
     ({ content, images }) => {
@@ -399,26 +402,33 @@ function AppShell() {
       createTheme({
         palette: {
           mode: isDark ? 'dark' : 'light',
-          primary: { main: appearance.accent || '#3f51b5' },
-          secondary: { main: '#805ad5' },
-          background: { default: isDark ? '#141414' : '#ffffff', paper: isDark ? '#1f1f1f' : '#ffffff' },
+          primary: { main: appearance.accent || DEFAULT_ACCENT },
+          secondary: { main: '#475569' },
+          background: { default: isDark ? '#111113' : '#ffffff', paper: isDark ? '#19191c' : '#ffffff' },
+          divider: isDark ? '#2a2a2e' : '#e5e5e7',
+          text: { primary: isDark ? '#ececf1' : '#1d1d1f', secondary: isDark ? '#9a9aa3' : '#6e6e73' },
         },
         shape: { borderRadius: 10 },
-        typography: { fontFamily: 'inherit' },
+        typography: { fontFamily: 'inherit', fontSize: 14 },
+        components: {
+          MuiButton: { defaultProps: { disableElevation: true } },
+          MuiPaper: { styleOverrides: { root: { backgroundImage: 'none' } } },
+          MuiTooltip: { defaultProps: { arrow: false, enterDelay: 400 } },
+        },
       }),
     [isDark, appearance.accent]
   );
 
   useEffect(() => {
     const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute('content', isDark ? '#141414' : appearance.accent || '#3f51b5');
+    if (meta) meta.setAttribute('content', isDark ? '#111113' : '#ffffff');
   }, [isDark, appearance.accent]);
 
   // Theme tokens live on <html> so MUI portals (drawer, menus, dialogs) pick them up too.
   useEffect(() => {
     const root = document.documentElement;
     root.dataset.theme = isDark ? 'dark' : 'light';
-    root.style.setProperty('--primary-color', appearance.accent || '#3f51b5');
+    root.style.setProperty('--primary-color', appearance.accent || DEFAULT_ACCENT);
     root.style.setProperty('--primary-rgb', hexToRgb(appearance.accent));
     root.style.setProperty('--font-scale', String(FONT_SCALE[appearance.fontSize] || 1));
     root.style.colorScheme = isDark ? 'dark' : 'light';
@@ -452,7 +462,7 @@ function AppShell() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <div className={`app ${isDark ? 'dark' : 'light'} ${appearance.compact ? 'compact' : ''}`}>
+      <div className={`app ${isDark ? 'dark' : 'light'}`}>
         <ConnectionBanner online={backend.online} checking={backend.checking} retryIn={backend.retryIn} onRetry={backend.retry} />
         <Navbar
           view={nav.view}
@@ -463,7 +473,14 @@ function AppShell() {
           onOpenDrawer={() => setDrawerOpen(true)}
           showDrawerButton={isMobile && nav.view === 'chat'}
         />
-        {nav.view === 'settings' ? (
+        {needsSetup ? (
+          <SetupScreen
+            onDone={() => {
+              setConnectionKey((k) => k + 1);
+              goRoot();
+            }}
+          />
+        ) : nav.view === 'settings' ? (
           <SettingsPage
             onBack={closeSettings}
             health={backend.health}
@@ -489,21 +506,13 @@ function AppShell() {
                 providerId={headerProviderId}
                 model={headerModel}
                 onChangeModel={handleChangeModel}
-                onOpenSettings={openSettings}
                 onBack={() => setDrawerOpen(true)}
                 showBack={isMobile}
-                onExport={exportChat}
                 streaming={stream.isStreaming}
                 connectionKey={connectionKey}
               />
               {showEmpty ? (
-                <EmptyState
-                  assistant={settings.assistant}
-                  hasProvider={hasProvider}
-                  activeModel={headerModel || enabledProviders.find((p) => p.id === headerProviderId)?.defaultModel}
-                  onOpenSettings={openSettings}
-                  onPick={(text) => composerRef.current?.setText(text)}
-                />
+                <EmptyState assistant={settings.assistant} activeModel={headerModel || enabledProviders.find((p) => p.id === headerProviderId)?.defaultModel} onPick={(text) => composerRef.current?.setText(text)} />
               ) : (
                 <MessageList
                   messages={messages}

@@ -1,126 +1,37 @@
-/* src/styles/navbar.css */
+/* src/styles/Navbar.css — slim flat top bar */
 .navbar {
-  position: relative;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 10px 16px;
-  gap: 12px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  overflow: hidden;
-  color: #fff;
-  background: linear-gradient(to right, #2b2b2b, #0a0a0a);
+  justify-content: space-between;
+  height: 48px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--header-bg);
   flex-shrink: 0;
 }
-
-.navbar-background-animation {
-  position: absolute;
-  inset: 0;
-  width: 200%;
-  background: linear-gradient(45deg, rgba(var(--primary-rgb), 0.5), transparent 40%, rgba(128, 90, 213, 0.4));
-  background-size: 400% 400%;
-  animation: gradientShift 10s ease infinite;
-  opacity: 0.35;
-  pointer-events: none;
-}
-
-@keyframes gradientShift {
-  0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
-  }
-}
-
 .navbar-left,
-.navbar-buttons {
+.navbar-right {
   display: flex;
   align-items: center;
-  gap: 8px;
-  position: relative;
-  z-index: 1;
+  gap: 4px;
 }
-
-.navbar-btn {
-  position: relative;
+.brand {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: rgba(255, 255, 255, 0.08);
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
   border: none;
-  padding: 8px 14px;
-  font-size: 0.95rem;
-  color: #fff;
-  cursor: pointer;
-  border-radius: 10px;
-  transition: transform 0.2s, background 0.2s;
-  overflow: hidden;
-  white-space: nowrap;
-}
-.navbar-btn:hover {
-  transform: translateY(-1px);
-  background: rgba(255, 255, 255, 0.16);
-}
-.navbar-btn.icon-only {
-  padding: 8px;
-}
-.navbar-btn.brand {
-  font-weight: 700;
-  font-size: 1.05rem;
   background: transparent;
+  color: var(--text-color);
+  font-weight: 600;
+  font-size: 0.98rem;
+  cursor: pointer;
+  letter-spacing: -0.01em;
 }
-.navbar-btn.brand .brand-icon {
+.brand:hover {
+  background: var(--surface-color);
+}
+.brand .brand-mark {
   color: var(--primary-color);
-  filter: brightness(1.4);
-}
-.navbar-btn.active::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: 3px;
-  background: linear-gradient(90deg, var(--primary-color), #805ad5);
-  animation: underlineAnimation 3s linear infinite;
-}
-@keyframes underlineAnimation {
-  0% {
-    transform: translateX(-100%);
-  }
-  100% {
-    transform: translateX(100%);
-  }
-}
-.navbar-btn::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -150%;
-  width: 150%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent);
-  animation: shineButton 4s infinite;
-  pointer-events: none;
-}
-@keyframes shineButton {
-  0% {
-    transform: translateX(-150%);
-  }
-  60%,
-  100% {
-    transform: translateX(150%);
-  }
-}
-
-@media (max-width: 767px) {
-  .navbar-btn span.label {
-    display: none;
-  }
-  .navbar-btn {
-    padding: 8px 10px;
-  }
 }

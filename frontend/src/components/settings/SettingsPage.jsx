@@ -1,6 +1,5 @@
 // src/components/settings/SettingsPage.jsx
 import { useState } from 'react';
-import { Tabs, Tab, IconButton } from '@mui/material';
 import { ArrowLeft } from 'lucide-react';
 import ProvidersTab from './ProvidersTab';
 import ModelTab from './ModelTab';
@@ -18,16 +17,18 @@ export default function SettingsPage({ onBack, health, onProvidersChanged, onDat
     <div className="settings-page">
       <div className="settings-inner">
         <div className="settings-header">
-          <IconButton onClick={onBack} aria-label="Back to chat">
+          <button className="icon-btn" onClick={onBack} aria-label="Back to chat">
             <ArrowLeft size={20} />
-          </IconButton>
+          </button>
           <h1>Settings</h1>
         </div>
-        <Tabs className="settings-tabs" value={tab} onChange={(_, v) => setTab(v)} variant="scrollable" scrollButtons="auto" allowScrollButtonsMobile>
-          {TABS.map((t) => (
-            <Tab key={t} label={t} />
+        <div className="tab-strip" role="tablist">
+          {TABS.map((t, i) => (
+            <button key={t} role="tab" aria-selected={tab === i} className={tab === i ? 'active' : ''} onClick={() => setTab(i)}>
+              {t}
+            </button>
           ))}
-        </Tabs>
+        </div>
         {tab === 0 && <ProvidersTab onProvidersChanged={onProvidersChanged} />}
         {tab === 1 && <ModelTab />}
         {tab === 2 && <PersonaTab />}

@@ -5,9 +5,9 @@ import "time"
 
 // Image is an image attachment on a message. Data is base64 without the data: URL prefix.
 type Image struct {
-	Name     string `json:"name" bson:"name"`
-	MimeType string `json:"mimeType" bson:"mimeType"`
-	Data     string `json:"data" bson:"data"`
+	Name     string `json:"name"`
+	MimeType string `json:"mimeType"`
+	Data     string `json:"data"`
 }
 
 // DataURL renders the image as a data: URL.
@@ -21,42 +21,42 @@ func (i Image) DataURL() string {
 
 // Stats describes how an assistant message was generated.
 type Stats struct {
-	InputTokens     int     `json:"inputTokens" bson:"inputTokens"`
-	OutputTokens    int     `json:"outputTokens" bson:"outputTokens"`
-	DurationMs      int64   `json:"durationMs" bson:"durationMs"`
-	TokensPerSecond float64 `json:"tokensPerSecond" bson:"tokensPerSecond"`
-	Stopped         bool    `json:"stopped" bson:"stopped"`
-	Error           string  `json:"error,omitempty" bson:"error,omitempty"`
+	InputTokens     int     `json:"inputTokens"`
+	OutputTokens    int     `json:"outputTokens"`
+	DurationMs      int64   `json:"durationMs"`
+	TokensPerSecond float64 `json:"tokensPerSecond"`
+	Stopped         bool    `json:"stopped"`
+	Error           string  `json:"error,omitempty"`
 }
 
 // Message is a single turn in a chat.
 type Message struct {
-	ID           string     `json:"id" bson:"_id"`
-	Role         string     `json:"role" bson:"role"` // user | assistant | system
-	Content      string     `json:"content" bson:"content"`
-	Reasoning    string     `json:"reasoning,omitempty" bson:"reasoning,omitempty"`
-	Images       []Image    `json:"images,omitempty" bson:"images,omitempty"`
-	Model        string     `json:"model,omitempty" bson:"model,omitempty"`
-	ProviderID   string     `json:"providerId,omitempty" bson:"providerId,omitempty"`
-	ProviderName string     `json:"providerName,omitempty" bson:"providerName,omitempty"`
-	Timestamp    time.Time  `json:"timestamp" bson:"timestamp"`
-	EditedAt     *time.Time `json:"editedAt" bson:"editedAt,omitempty"`
-	Stats        *Stats     `json:"stats,omitempty" bson:"stats,omitempty"`
+	ID           string     `json:"id"`
+	Role         string     `json:"role"` // user | assistant | system
+	Content      string     `json:"content"`
+	Reasoning    string     `json:"reasoning,omitempty"`
+	Images       []Image    `json:"images,omitempty"`
+	Model        string     `json:"model,omitempty"`
+	ProviderID   string     `json:"providerId,omitempty"`
+	ProviderName string     `json:"providerName,omitempty"`
+	Timestamp    time.Time  `json:"timestamp"`
+	EditedAt     *time.Time `json:"editedAt"`
+	Stats        *Stats     `json:"stats,omitempty"`
 }
 
 // Chat is a conversation.
 type Chat struct {
-	ID           string            `json:"id" bson:"_id"`
-	Title        string            `json:"title" bson:"title"`
-	Pinned       bool              `json:"pinned" bson:"pinned"`
-	Archived     bool              `json:"archived" bson:"archived"`
-	ProviderID   string            `json:"providerId" bson:"providerId"`
-	Model        string            `json:"model" bson:"model"`
-	SystemPrompt string            `json:"systemPrompt" bson:"systemPrompt"`
-	Meta         map[string]string `json:"-" bson:"meta,omitempty"`
-	Messages     []Message         `json:"messages" bson:"messages"`
-	CreatedAt    time.Time         `json:"createdAt" bson:"createdAt"`
-	UpdatedAt    time.Time         `json:"updatedAt" bson:"updatedAt"`
+	ID           string            `json:"id"`
+	Title        string            `json:"title"`
+	Pinned       bool              `json:"pinned"`
+	Archived     bool              `json:"archived"`
+	ProviderID   string            `json:"providerId"`
+	Model        string            `json:"model"`
+	SystemPrompt string            `json:"systemPrompt"`
+	Meta         map[string]string `json:"-"`
+	Messages     []Message         `json:"messages"`
+	CreatedAt    time.Time         `json:"createdAt"`
+	UpdatedAt    time.Time         `json:"updatedAt"`
 }
 
 // ChatSummary is the list representation of a chat.
@@ -96,28 +96,28 @@ func (c *Chat) Summary() ChatSummary {
 
 // User is the single local profile.
 type User struct {
-	ID          string    `json:"id" bson:"_id"`
-	Username    string    `json:"username" bson:"username"`
-	AboutMe     string    `json:"aboutMe" bson:"aboutMe"`
-	Preferences string    `json:"preferences" bson:"preferences"`
-	CreatedAt   time.Time `json:"createdAt" bson:"createdAt"`
-	UpdatedAt   time.Time `json:"updatedAt" bson:"updatedAt"`
+	ID          string    `json:"id"`
+	Username    string    `json:"username"`
+	AboutMe     string    `json:"aboutMe"`
+	Preferences string    `json:"preferences"`
+	CreatedAt   time.Time `json:"createdAt"`
+	UpdatedAt   time.Time `json:"updatedAt"`
 }
 
 // ProviderConfig is a configured LLM endpoint.
 type ProviderConfig struct {
-	ID           string            `json:"id" bson:"_id"`
-	Type         string            `json:"type" bson:"type"`
-	Name         string            `json:"name" bson:"name"`
-	BaseURL      string            `json:"baseUrl" bson:"baseUrl"`
-	APIKey       string            `json:"apiKey,omitempty" bson:"apiKey"`
-	APIKeySet    bool              `json:"apiKeySet" bson:"-"`
-	ClearAPIKey  bool              `json:"clearApiKey,omitempty" bson:"-"`
-	Headers      map[string]string `json:"headers" bson:"headers"`
-	DefaultModel string            `json:"defaultModel" bson:"defaultModel"`
-	Models       []string          `json:"models" bson:"models"`
-	Enabled      bool              `json:"enabled" bson:"enabled"`
-	Options      map[string]any    `json:"options" bson:"options"`
+	ID           string            `json:"id"`
+	Type         string            `json:"type"`
+	Name         string            `json:"name"`
+	BaseURL      string            `json:"baseUrl"`
+	APIKey       string            `json:"apiKey,omitempty"`
+	APIKeySet    bool              `json:"apiKeySet"`
+	ClearAPIKey  bool              `json:"clearApiKey,omitempty"`
+	Headers      map[string]string `json:"headers"`
+	DefaultModel string            `json:"defaultModel"`
+	Models       []string          `json:"models"`
+	Enabled      bool              `json:"enabled"`
+	Options      map[string]any    `json:"options"`
 }
 
 // Masked returns a copy safe to send to clients.
@@ -139,39 +139,39 @@ func (p ProviderConfig) Masked() ProviderConfig {
 
 // GenerationParams are sampling settings. Nil pointers mean "provider default".
 type GenerationParams struct {
-	Temperature   *float64 `json:"temperature" bson:"temperature,omitempty"`
-	TopP          *float64 `json:"topP" bson:"topP,omitempty"`
-	MaxTokens     *int     `json:"maxTokens" bson:"maxTokens,omitempty"`
-	ContextLength *int     `json:"contextLength" bson:"contextLength,omitempty"`
-	Reasoning     string   `json:"reasoning" bson:"reasoning"` // auto | off | low | medium | high | on
-	Seed          *int     `json:"seed" bson:"seed,omitempty"`
-	StopSequences []string `json:"stopSequences" bson:"stopSequences"`
+	Temperature   *float64 `json:"temperature"`
+	TopP          *float64 `json:"topP"`
+	MaxTokens     *int     `json:"maxTokens"`
+	ContextLength *int     `json:"contextLength"`
+	Reasoning     string   `json:"reasoning"` // auto | off | low | medium | high | on
+	Seed          *int     `json:"seed"`
+	StopSequences []string `json:"stopSequences"`
 }
 
 // AssistantPersona names the bot.
 type AssistantPersona struct {
-	Name   string `json:"name" bson:"name"`
-	Avatar string `json:"avatar" bson:"avatar"`
+	Name   string `json:"name"`
+	Avatar string `json:"avatar"`
 }
 
 // Features toggles backend behaviour.
 type Features struct {
-	AutoTitle       bool `json:"autoTitle" bson:"autoTitle"`
-	HistoryLimit    int  `json:"historyLimit" bson:"historyLimit"`
-	SendUserProfile bool `json:"sendUserProfile" bson:"sendUserProfile"`
+	AutoTitle       bool `json:"autoTitle"`
+	HistoryLimit    int  `json:"historyLimit"`
+	SendUserProfile bool `json:"sendUserProfile"`
 }
 
 // Settings is the single app-wide settings document.
 type Settings struct {
-	ActiveProviderID string           `json:"activeProviderId" bson:"activeProviderId"`
-	ActiveModel      string           `json:"activeModel" bson:"activeModel"`
-	SystemPrompt     string           `json:"systemPrompt" bson:"systemPrompt"`
-	Assistant        AssistantPersona `json:"assistant" bson:"assistant"`
-	Generation       GenerationParams `json:"generation" bson:"generation"`
-	Features         Features         `json:"features" bson:"features"`
-	Appearance       map[string]any   `json:"appearance" bson:"appearance"`
-	Providers        []ProviderConfig `json:"providers" bson:"providers"`
-	UpdatedAt        time.Time        `json:"updatedAt" bson:"updatedAt"`
+	ActiveProviderID string           `json:"activeProviderId"`
+	ActiveModel      string           `json:"activeModel"`
+	SystemPrompt     string           `json:"systemPrompt"`
+	Assistant        AssistantPersona `json:"assistant"`
+	Generation       GenerationParams `json:"generation"`
+	Features         Features         `json:"features"`
+	Appearance       map[string]any   `json:"appearance"`
+	Providers        []ProviderConfig `json:"providers"`
+	UpdatedAt        time.Time        `json:"updatedAt"`
 }
 
 // DefaultSettings returns the settings used on first run.

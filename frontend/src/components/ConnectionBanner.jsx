@@ -1,19 +1,18 @@
 // src/components/ConnectionBanner.jsx
-import { WifiOff, RefreshCw } from 'lucide-react';
-import { Button } from '@mui/material';
+import { RefreshCw } from 'lucide-react';
 
 export default function ConnectionBanner({ online, checking, retryIn, onRetry }) {
   if (online) return null;
   return (
     <div className="connection-banner" role="alert">
-      {checking ? <RefreshCw size={16} className="spin" /> : <WifiOff size={16} />}
+      {checking ? <RefreshCw size={14} className="spin" /> : <span className="dot" />}
       <span>
         Can&apos;t reach the LocalMind server
         {checking ? ' — checking…' : retryIn > 0 ? ` — retrying in ${retryIn}s` : ' — retrying…'}
       </span>
-      <Button size="small" variant="outlined" color="inherit" onClick={onRetry} disabled={checking} sx={{ textTransform: 'none' }}>
+      <button className="btn text" onClick={onRetry} disabled={checking}>
         Retry now
-      </Button>
+      </button>
     </div>
   );
 }

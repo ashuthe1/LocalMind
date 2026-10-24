@@ -20,8 +20,6 @@ import (
 	"github.com/ashuthe1/localmind/config"
 	"github.com/ashuthe1/localmind/logger"
 	"github.com/ashuthe1/localmind/services"
-	"github.com/ashuthe1/localmind/store"
-	mongostore "github.com/ashuthe1/localmind/store/mongo"
 	sqlitestore "github.com/ashuthe1/localmind/store/sqlite"
 	"github.com/ashuthe1/localmind/web"
 )
@@ -29,11 +27,11 @@ import (
 func main() {
 	cfg := config.Load()
 	logger.Init(filepath.Join(cfg.DataDir, "logs"), cfg.LogLevel)
-	logger.Log.Infof("LocalMind %s starting (storage=%s)", config.Version, cfg.Storage)
+	logger.Log.Infof("LocalMind %s starting", config.Version)
 
-	st, err := openStore(cfg)
+	st, err := sqlitestore.Open(cfg.SQLitePath)
 	if err != nil {
-		logger.Log.Fatalf("Could not open storage: %v", err)
+		logger.Log.Fatalf("Could not open the database at %s: %v", cfg.SQLitePath, err)
 	}
 	defer st.Close()
 
@@ -56,7 +54,7 @@ func main() {
 
 	go func() {
 		url := displayURL(cfg.ServerAddress)
-		fmt.Printf("\n  LocalMind is running at %s\n  Storage: %s\n\n", url, describeStorage(cfg))
+		fmt.Printf("\n  LocalMind is running at %s\n  Data: %s\n\n", url, cfg.SQLitePath)
 		if cfg.OpenBrowser {
 			openBrowser(url)
 		}
@@ -75,24 +73,6 @@ func main() {
 		logger.Log.Errorf("Forced shutdown: %v", err)
 	}
 	logger.Log.Info("Bye")
-}
-
-func openStore(cfg *config.Config) (store.Store, error) {
-	switch cfg.Storage {
-	case "mongo", "mongodb":
-		return mongostore.Open(context.Background(), cfg.MongoURI, cfg.DatabaseName)
-	case "sqlite", "":
-		return sqlitestore.Open(cfg.SQLitePath)
-	default:
-		return nil, fmt.Errorf("unknown STORAGE %q (use sqlite or mongo)", cfg.Storage)
-	}
-}
-
-func describeStorage(cfg *config.Config) string {
-	if cfg.Storage == "mongo" || cfg.Storage == "mongodb" {
-		return "MongoDB (" + cfg.DatabaseName + ")"
-	}
-	return "SQLite (" + cfg.SQLitePath + ")"
 }
 
 func displayURL(addr string) string {

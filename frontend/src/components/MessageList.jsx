@@ -1,6 +1,5 @@
 // src/components/MessageList.jsx
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Fab } from '@mui/material';
 import { ArrowDown } from 'lucide-react';
 import MessageItem from './MessageItem';
 
@@ -16,8 +15,8 @@ export default function MessageList({ messages, streaming, assistant, appearance
     setPinnedToBottom(distance < 80);
   }, []);
 
-  const lastContent = messages.length ? messages[messages.length - 1] : null;
-  const lastLen = (lastContent?.content?.length || 0) + (lastContent?.reasoning?.length || 0);
+  const last = messages.length ? messages[messages.length - 1] : null;
+  const lastLen = (last?.content?.length || 0) + (last?.reasoning?.length || 0);
 
   useEffect(() => {
     if (pinnedToBottom) endRef.current?.scrollIntoView({ behavior: streaming ? 'auto' : 'smooth' });
@@ -55,9 +54,9 @@ export default function MessageList({ messages, streaming, assistant, appearance
         </div>
       </div>
       {!pinnedToBottom && (
-        <Fab size="small" color="primary" className="scroll-to-bottom" onClick={scrollToBottom} aria-label="Scroll to bottom">
-          <ArrowDown size={18} />
-        </Fab>
+        <button className="scroll-to-bottom" onClick={scrollToBottom} aria-label="Scroll to bottom">
+          <ArrowDown size={16} />
+        </button>
       )}
     </>
   );

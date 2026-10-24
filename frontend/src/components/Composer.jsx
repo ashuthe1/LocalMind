@@ -1,7 +1,7 @@
 // src/components/Composer.jsx
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
-import { IconButton, Tooltip } from '@mui/material';
-import { Send, Square, ImagePlus, X } from 'lucide-react';
+import { Tooltip } from '@mui/material';
+import { ArrowUp, Square, ImagePlus, X } from 'lucide-react';
 import { fileToAttachment, filesFromDataTransfer, attachmentToDataUrl, MAX_IMAGES } from '../utils/images';
 import { useToast } from '../context/ToastContext';
 
@@ -123,6 +123,24 @@ const Composer = forwardRef(function Composer(
             ))}
           </div>
         )}
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          multiple
+          hidden
+          onChange={(e) => {
+            addFiles(e.target.files);
+            e.target.value = '';
+          }}
+        />
+        <Tooltip title="Attach images">
+          <span>
+            <button className="icon-btn attach-btn" onClick={() => fileRef.current?.click()} disabled={disabled || streaming} aria-label="Attach images">
+              <ImagePlus size={18} />
+            </button>
+          </span>
+        </Tooltip>
         <textarea
           ref={textareaRef}
           rows={1}
@@ -134,44 +152,22 @@ const Composer = forwardRef(function Composer(
           disabled={disabled}
           aria-label="Message"
         />
-        <div className="composer-bar">
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/*"
-            multiple
-            hidden
-            onChange={(e) => {
-              addFiles(e.target.files);
-              e.target.value = '';
-            }}
-          />
-          <Tooltip title="Attach images">
-            <span>
-              <IconButton size="small" onClick={() => fileRef.current?.click()} disabled={disabled || streaming} aria-label="Attach images">
-                <ImagePlus size={18} />
-              </IconButton>
-            </span>
-          </Tooltip>
-          <span className="spacer" />
-          {streaming ? (
-            <Tooltip title="Stop generating (Esc)">
-              <button className="send-btn stop" onClick={onStop} aria-label="Stop generating">
-                <Square size={16} fill="currentColor" />
-              </button>
-            </Tooltip>
-          ) : (
-            <button className="send-btn" onClick={submit} disabled={!canSend} aria-label="Send message">
-              <Send size={17} />
+        {streaming ? (
+          <Tooltip title="Stop (Esc)">
+            <button className="send-btn stop" onClick={onStop} aria-label="Stop generating">
+              <Square size={14} fill="currentColor" />
             </button>
-          )}
-        </div>
+          </Tooltip>
+        ) : (
+          <button className="send-btn" onClick={submit} disabled={!canSend} aria-label="Send message">
+            <ArrowUp size={18} />
+          </button>
+        )}
       </div>
       <div className="composer-hint">
         {disabled ? (
           <>
-            {disabledReason || 'No provider configured.'}{' '}
-            <button onClick={onOpenSettings}>Open settings</button>
+            {disabledReason || 'No provider configured.'} <button onClick={onOpenSettings}>Open settings</button>
           </>
         ) : sendOnEnter ? (
           <>

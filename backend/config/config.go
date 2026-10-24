@@ -16,11 +16,8 @@ const Version = "2.0.0"
 // Config holds all runtime configuration.
 type Config struct {
 	ServerAddress string
-	Storage       string // sqlite | mongo
 	DataDir       string
 	SQLitePath    string
-	MongoURI      string
-	DatabaseName  string
 	FrontendDir   string // serve a built frontend from this directory instead of the embedded one
 	CORSOrigins   []string
 	LogLevel      string
@@ -52,10 +49,7 @@ func Load() *Config {
 
 	cfg := &Config{
 		ServerAddress:   getEnv("SERVER_ADDRESS", ":8080"),
-		Storage:         strings.ToLower(getEnv("STORAGE", "")),
 		DataDir:         getEnv("DATA_DIR", filepath.Join(root, "data")),
-		MongoURI:        getEnv("MONGO_URI", ""),
-		DatabaseName:    getEnv("DATABASE_NAME", "LocalMind"),
 		FrontendDir:     getEnv("FRONTEND_DIR", ""),
 		LogLevel:        getEnv("LOG_LEVEL", "info"),
 		RootDir:         root,
@@ -66,20 +60,7 @@ func Load() *Config {
 		DefaultModel:    getEnv("MODEL_NAME", ""),
 		OpenBrowser:     getEnvBool("OPEN_BROWSER", false),
 	}
-	if cfg.Storage == "" {
-		if cfg.MongoURI != "" {
-			cfg.Storage = "mongo"
-		} else {
-			cfg.Storage = "sqlite"
-		}
-	}
-	if cfg.MongoURI == "" {
-		cfg.MongoURI = "mongodb://localhost:27017"
-	}
 	cfg.SQLitePath = getEnv("SQLITE_PATH", filepath.Join(cfg.DataDir, "localmind.db"))
-	if cfg.DefaultProvider == "" {
-		cfg.DefaultProvider = "ollama"
-	}
 	if origins := getEnv("CORS_ORIGINS", ""); origins != "" {
 		for _, o := range strings.Split(origins, ",") {
 			if o = strings.TrimSpace(o); o != "" {

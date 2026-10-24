@@ -1,13 +1,13 @@
-// src/constants.js — shared defaults and option lists
+// src/constants.js — shared defaults
+export const DEFAULT_ACCENT = '#4f6df5';
+
 export const DEFAULT_APPEARANCE = {
   theme: 'system',
-  accent: '#3f51b5',
+  accent: DEFAULT_ACCENT,
   fontSize: 'medium',
-  codeTheme: 'material',
   showReasoning: true,
   showTimestamps: true,
   sendOnEnter: true,
-  compact: false,
 };
 
 export const DEFAULT_SETTINGS = {
@@ -29,9 +29,12 @@ export const DEFAULT_SETTINGS = {
   providers: [],
 };
 
-export const CODE_THEMES = [
-  { id: 'material', label: 'Material' },
-  { id: 'one', label: 'One Dark / Light' },
-  { id: 'vscode', label: 'VS Code' },
-  { id: 'dracula', label: 'Dracula / GitHub' },
+/** The short list shown during setup and when adding a provider. */
+export const PROVIDER_CHOICES = [
+  { id: 'ollama', name: 'Ollama', sub: 'Runs on this computer', type: 'ollama', baseUrl: 'http://localhost:11434', needsApiKey: false },
+  { id: 'lmstudio', name: 'LM Studio', sub: 'Runs on this computer', type: 'lmstudio', baseUrl: 'http://localhost:1234', needsApiKey: false },
+  { id: 'openai', name: 'OpenAI', sub: 'Cloud · API key', type: 'openai', baseUrl: 'https://api.openai.com/v1', needsApiKey: true },
+  { id: 'anthropic', name: 'Anthropic', sub: 'Cloud · API key', type: 'anthropic', baseUrl: 'https://api.anthropic.com', needsApiKey: true },
+  { id: 'gemini', name: 'Google Gemini', sub: 'Cloud · API key', type: 'gemini', baseUrl: 'https://generativelanguage.googleapis.com/v1beta', needsApiKey: true },
+  { id: 'custom', name: 'Something else', sub: 'Any OpenAI-compatible URL', type: 'openai', baseUrl: '', needsApiKey: false },
 ];

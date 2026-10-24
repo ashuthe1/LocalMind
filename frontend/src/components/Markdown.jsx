@@ -3,34 +3,12 @@ import { memo, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import {
-  materialDark,
-  materialLight,
-  oneDark,
-  oneLight,
-  vscDarkPlus,
-  vs,
-  dracula,
-  ghcolors,
-} from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { IconButton, Tooltip } from '@mui/material';
+import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { Tooltip } from '@mui/material';
 import { Copy, Check } from 'lucide-react';
 import { copyText } from '../utils/clipboard';
 
-function pickStyle(codeTheme, isDark) {
-  switch (codeTheme) {
-    case 'one':
-      return isDark ? oneDark : oneLight;
-    case 'vscode':
-      return isDark ? vscDarkPlus : vs;
-    case 'dracula':
-      return isDark ? dracula : ghcolors;
-    default:
-      return isDark ? materialDark : materialLight;
-  }
-}
-
-function CodeBlock({ children, isDark, codeTheme }) {
+function CodeBlock({ children, isDark }) {
   const [copied, setCopied] = useState(false);
   const child = Array.isArray(children) ? children[0] : children;
   const className = child?.props?.className || '';
@@ -50,25 +28,25 @@ function CodeBlock({ children, isDark, codeTheme }) {
       <div className="code-block-header">
         <span>{language || 'code'}</span>
         <Tooltip title={copied ? 'Copied' : 'Copy code'}>
-          <IconButton size="small" onClick={onCopy} aria-label="Copy code">
-            {copied ? <Check size={14} /> : <Copy size={14} />}
-          </IconButton>
+          <button className="icon-btn" onClick={onCopy} aria-label="Copy code" style={{ width: 26, height: 26 }}>
+            {copied ? <Check size={13} /> : <Copy size={13} />}
+          </button>
         </Tooltip>
       </div>
-      <SyntaxHighlighter style={pickStyle(codeTheme, isDark)} language={language || 'text'} PreTag="pre" wrapLongLines>
+      <SyntaxHighlighter style={isDark ? oneDark : oneLight} language={language || 'text'} PreTag="pre" wrapLongLines customStyle={{ background: 'transparent', padding: '12px 14px' }}>
         {code}
       </SyntaxHighlighter>
     </div>
   );
 }
 
-function Markdown({ content, isDark, codeTheme }) {
+function Markdown({ content, isDark }) {
   return (
     <div className="markdown">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
-          pre: ({ children }) => <CodeBlock isDark={isDark} codeTheme={codeTheme}>{children}</CodeBlock>,
+          pre: ({ children }) => <CodeBlock isDark={isDark}>{children}</CodeBlock>,
           a: ({ children, href }) => (
             <a href={href} target="_blank" rel="noreferrer noopener">
               {children}

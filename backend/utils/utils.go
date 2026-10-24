@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-// NewID returns a 24-character hex identifier (same shape as a Mongo ObjectID).
+// NewID returns a 24-character hex identifier (compact, URL-safe).
 func NewID() string {
 	b := make([]byte, 12)
 	if _, err := rand.Read(b); err != nil {

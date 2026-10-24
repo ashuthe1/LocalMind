@@ -1,7 +1,7 @@
-// src/components/Sidebar.jsx
+// src/components/Sidebar.jsx — plain chat list
 import { forwardRef, useEffect, useMemo, useRef, useState } from 'react';
-import { Button, IconButton, Menu, MenuItem, TextField, InputAdornment, ListItemIcon, ListItemText, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Divider } from '@mui/material';
-import { Plus, Trash2, Search, Pin, PinOff, Pencil, Download, FileJson, MoreHorizontal, MessageSquare, X } from 'lucide-react';
+import { Menu, MenuItem, ListItemIcon, ListItemText, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Divider, Button } from '@mui/material';
+import { Plus, Trash2, Search, Pin, PinOff, Pencil, Download, FileJson, MoreHorizontal, X } from 'lucide-react';
 import { formatRelative } from '../utils/dateUtils';
 import '../styles/sidebar.css';
 
@@ -23,8 +23,19 @@ function ChatRow({ chat, selected, onSelect, onRename, onTogglePin, onExport, on
     setRenaming(false);
     if (t && t !== chat.title) onRename(chat, t);
   };
-
   const closeMenu = () => setMenuAnchor(null);
+  const item = (label, icon, action, extra = {}) => (
+    <MenuItem
+      onClick={() => {
+        closeMenu();
+        action();
+      }}
+      {...extra}
+    >
+      <ListItemIcon sx={extra.sx}>{icon}</ListItemIcon>
+      <ListItemText>{label}</ListItemText>
+    </MenuItem>
+  );
 
   return (
     <div
@@ -40,7 +51,6 @@ function ChatRow({ chat, selected, onSelect, onRename, onTogglePin, onExport, on
       }}
       onDoubleClick={() => setRenaming(true)}
     >
-      <MessageSquare size={16} className="chat-icon" />
       <div className="chat-body">
         {renaming ? (
           <input
@@ -58,23 +68,14 @@ function ChatRow({ chat, selected, onSelect, onRename, onTogglePin, onExport, on
             aria-label="Chat title"
           />
         ) : (
-          <div className="chat-title">{chat.title || 'New chat'}</div>
+          <>
+            <span className="chat-title">{chat.title || 'New chat'}</span>
+            <span className="chat-time">{formatRelative(chat.updatedAt)}</span>
+          </>
         )}
-        <div className="chat-meta">
-          <span>{formatRelative(chat.updatedAt)}</span>
-          <span>·</span>
-          <span>{chat.messageCount ?? 0} msgs</span>
-          {chat.lastMessagePreview && (
-            <>
-              <span>·</span>
-              <span>{chat.lastMessagePreview}</span>
-            </>
-          )}
-        </div>
       </div>
-      <IconButton
-        size="small"
-        className="chat-menu-btn"
+      <button
+        className="icon-btn chat-menu-btn"
         onClick={(e) => {
           e.stopPropagation();
           setMenuAnchor(e.currentTarget);
@@ -82,63 +83,14 @@ function ChatRow({ chat, selected, onSelect, onRename, onTogglePin, onExport, on
         aria-label="Chat options"
       >
         <MoreHorizontal size={16} />
-      </IconButton>
+      </button>
       <Menu anchorEl={menuAnchor} open={Boolean(menuAnchor)} onClose={closeMenu} onClick={(e) => e.stopPropagation()}>
-        <MenuItem
-          onClick={() => {
-            closeMenu();
-            setRenaming(true);
-          }}
-        >
-          <ListItemIcon>
-            <Pencil size={16} />
-          </ListItemIcon>
-          <ListItemText>Rename</ListItemText>
-        </MenuItem>
-        <MenuItem
-          onClick={() => {
-            closeMenu();
-            onTogglePin(chat);
-          }}
-        >
-          <ListItemIcon>{chat.pinned ? <PinOff size={16} /> : <Pin size={16} />}</ListItemIcon>
-          <ListItemText>{chat.pinned ? 'Unpin' : 'Pin'}</ListItemText>
-        </MenuItem>
-        <MenuItem
-          onClick={() => {
-            closeMenu();
-            onExport(chat, 'markdown');
-          }}
-        >
-          <ListItemIcon>
-            <Download size={16} />
-          </ListItemIcon>
-          <ListItemText>Export Markdown</ListItemText>
-        </MenuItem>
-        <MenuItem
-          onClick={() => {
-            closeMenu();
-            onExport(chat, 'json');
-          }}
-        >
-          <ListItemIcon>
-            <FileJson size={16} />
-          </ListItemIcon>
-          <ListItemText>Export JSON</ListItemText>
-        </MenuItem>
+        {item('Rename', <Pencil size={16} />, () => setRenaming(true))}
+        {item(chat.pinned ? 'Unpin' : 'Pin', chat.pinned ? <PinOff size={16} /> : <Pin size={16} />, () => onTogglePin(chat))}
+        {item('Export Markdown', <Download size={16} />, () => onExport(chat, 'markdown'))}
+        {item('Export JSON', <FileJson size={16} />, () => onExport(chat, 'json'))}
         <Divider />
-        <MenuItem
-          onClick={() => {
-            closeMenu();
-            onDelete(chat);
-          }}
-          sx={{ color: 'error.main' }}
-        >
-          <ListItemIcon sx={{ color: 'error.main' }}>
-            <Trash2 size={16} />
-          </ListItemIcon>
-          <ListItemText>Delete</ListItemText>
-        </MenuItem>
+        {item('Delete', <Trash2 size={16} />, () => onDelete(chat), { sx: { color: 'error.main' } })}
       </Menu>
     </div>
   );
@@ -151,54 +103,31 @@ const Sidebar = forwardRef(function Sidebar(
   const [confirmAll, setConfirmAll] = useState(false);
   const [confirmChat, setConfirmChat] = useState(null);
 
-  const { pinned, others } = useMemo(() => {
-    const pinned = chats.filter((c) => c.pinned);
-    const others = chats.filter((c) => !c.pinned);
-    return { pinned, others };
-  }, [chats]);
+  const { pinned, others } = useMemo(() => ({ pinned: chats.filter((c) => c.pinned), others: chats.filter((c) => !c.pinned) }), [chats]);
 
-  const rowProps = {
-    onSelect: onSelectChat,
-    onRename: onRenameChat,
-    onTogglePin,
-    onExport: onExportChat,
-    onDelete: (chat) => setConfirmChat(chat),
-  };
+  const rowProps = { onSelect: onSelectChat, onRename: onRenameChat, onTogglePin, onExport: onExportChat, onDelete: (chat) => setConfirmChat(chat) };
 
   return (
     <aside className={`sidebar ${isDrawer ? 'drawer' : ''}`} aria-label="Chat history">
       <div className="sidebar-actions">
-        <Button variant="contained" startIcon={<Plus size={16} />} onClick={onNewChat} disableElevation>
-          New chat
-        </Button>
+        <button className="btn new-chat" onClick={onNewChat}>
+          <Plus size={16} /> New chat
+        </button>
         {isDrawer && (
-          <IconButton onClick={onClose} aria-label="Close chat list">
+          <button className="icon-btn" onClick={onClose} aria-label="Close chat list">
             <X size={18} />
-          </IconButton>
+          </button>
         )}
       </div>
-      <TextField
-        className="sidebar-search"
-        size="small"
-        placeholder="Search chats…"
-        value={query}
-        inputRef={searchRef}
-        onChange={(e) => onQueryChange(e.target.value)}
-        InputProps={{
-          startAdornment: (
-            <InputAdornment position="start">
-              <Search size={16} />
-            </InputAdornment>
-          ),
-          endAdornment: query ? (
-            <InputAdornment position="end">
-              <IconButton size="small" onClick={() => onQueryChange('')} aria-label="Clear search">
-                <X size={14} />
-              </IconButton>
-            </InputAdornment>
-          ) : null,
-        }}
-      />
+      <label className="sidebar-search">
+        <Search size={15} />
+        <input ref={searchRef} placeholder="Search" value={query} onChange={(e) => onQueryChange(e.target.value)} aria-label="Search chats" />
+        {query && (
+          <button className="icon-btn" onClick={() => onQueryChange('')} aria-label="Clear search">
+            <X size={13} />
+          </button>
+        )}
+      </label>
       <div className="chat-list">
         {pinned.length > 0 && (
           <>
@@ -212,25 +141,26 @@ const Sidebar = forwardRef(function Sidebar(
         {others.map((chat) => (
           <ChatRow key={chat.id} chat={chat} selected={chat.id === selectedChatId} {...rowProps} />
         ))}
-        {chats.length === 0 && <div className="chat-list-empty">{query ? 'No chats match your search.' : 'No chats yet. Start a new one!'}</div>}
+        {chats.length === 0 && <div className="chat-list-empty">{query ? 'No chats match.' : 'No chats yet.'}</div>}
       </div>
       <div className="sidebar-footer">
         <span>{footer}</span>
-        <Button size="small" color="error" startIcon={<Trash2 size={14} />} onClick={() => setConfirmAll(true)} disabled={chats.length === 0} sx={{ textTransform: 'none' }}>
+        <button className="link" onClick={() => setConfirmAll(true)} disabled={chats.length === 0}>
           Clear history
-        </Button>
+        </button>
       </div>
 
       <Dialog open={confirmAll} onClose={() => setConfirmAll(false)}>
         <DialogTitle>Delete all chats?</DialogTitle>
         <DialogContent>
-          <DialogContentText>This permanently removes every conversation stored in LocalMind. Export first if you want a copy.</DialogContentText>
+          <DialogContentText>This permanently removes every conversation. Export first if you want a copy.</DialogContentText>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setConfirmAll(false)}>Cancel</Button>
           <Button
             color="error"
             variant="contained"
+            disableElevation
             onClick={() => {
               setConfirmAll(false);
               onDeleteAll();
@@ -250,6 +180,7 @@ const Sidebar = forwardRef(function Sidebar(
           <Button
             color="error"
             variant="contained"
+            disableElevation
             onClick={() => {
               const c = confirmChat;
               setConfirmChat(null);

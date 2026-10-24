@@ -12,7 +12,7 @@
   <a href="LICENSE"><img alt="MIT" src="https://img.shields.io/badge/license-MIT-blue.svg"></a>
   <img alt="Go" src="https://img.shields.io/badge/backend-Go-00ADD8">
   <img alt="React" src="https://img.shields.io/badge/frontend-React%20%2B%20Vite-61DAFB">
-  <img alt="Storage" src="https://img.shields.io/badge/storage-SQLite%20%7C%20MongoDB-lightgrey">
+  <img alt="Storage" src="https://img.shields.io/badge/storage-SQLite%20(embedded)-lightgrey">
 </p>
 
 ---
@@ -25,7 +25,8 @@ LocalMind gives you a ChatGPT-style experience without handing your conversation
 
 - **Ollama**, **LM Studio** (native API *and* OpenAI-compatible mode), **llama.cpp server**, **vLLM**, **LocalAI**, **Jan** — anything local.
 - **OpenAI**, **Anthropic**, **Google Gemini**, **OpenRouter**, **Groq**, **DeepSeek**, **Mistral**, **xAI**, **Together**, **Fireworks**, **Cerebras**, **Perplexity**, or any **custom OpenAI-compatible** endpoint.
-- Configure as many providers as you like, test the connection, pick models from a live list, and switch provider/model per chat.
+- First launch asks one question: where does your model run? Pick Ollama, LM Studio, OpenAI, Anthropic, Gemini or any OpenAI-compatible URL, test it, choose a model, done.
+- Add as many providers as you like later and switch provider/model per chat.
 - Images: attach, paste or drop pictures for vision models (Ollama, LM Studio, OpenAI-compatible, Anthropic, Gemini).
 - Reasoning models: thinking is streamed separately and shown in a collapsible panel. `<think>` tags are handled for you.
 
@@ -40,22 +41,26 @@ LocalMind gives you a ChatGPT-style experience without handing your conversation
 **Yours, and customizable**
 
 - Persona: name and avatar for the assistant, your name, "about me" and response preferences fed into the system prompt.
-- Model controls: system prompt, temperature, top-p, max tokens, context length, reasoning effort, seed, stop sequences.
-- Appearance: system/dark/light theme, accent color, font size, code theme, timestamps, Enter-to-send, compact mode.
+- Model controls explained in plain language: creativity, reply length, reasoning effort, memory window, system prompt (top-p, context length, seed and stop sequences under Advanced).
+- Appearance: system/dark/light theme, accent color, font size, timestamps, Enter-to-send.
 - Data: one-click backup and restore of everything (API keys excluded).
 - Installable as a PWA; the system back button behaves like a native app on Android.
 
 ## Quick start
 
-Prerequisites: [Go 1.22+](https://go.dev/dl/) and [Node.js 18+](https://nodejs.org/). No database to install — SQLite is built in.
+One command. No database to install — SQLite is embedded in the binary.
 
 ```bash
-git clone https://github.com/ashuthe1/LocalMind.git
-cd LocalMind
-./start.sh
+git clone https://github.com/ashuthe1/LocalMind.git && cd LocalMind && ./start.sh
 ```
 
-That builds the UI, compiles the single binary to `bin/localmind`, starts it on <http://localhost:8080> and opens your browser. On first launch, open **Settings → Providers**, pick a preset (Ollama is pre-configured to `http://localhost:11434`), test the connection and choose a model.
+That builds the UI, compiles the single binary to `bin/localmind`, starts it on <http://localhost:8080> and opens your browser, where a two-step setup asks where your model runs. Requires [Go 1.22+](https://go.dev/dl/) and [Node.js 18+](https://nodejs.org/) for the build; after that only the binary is needed.
+
+Or download a prebuilt binary from [Releases](https://github.com/ashuthe1/LocalMind/releases) and run it:
+
+```bash
+./localmind
+```
 
 Prefer Docker?
 
@@ -68,8 +73,8 @@ or just the app, pointing at a model server you already run:
 
 ```bash
 docker build -t localmind .
-docker run -p 8080:8080 -v localmind:/data \
-  -e DEFAULT_PROVIDER_URL=http://host.docker.internal:11434 localmind
+docker run -p 8080:8080 -v localmind:/data localmind
+# then point the setup screen at your model server, e.g. http://host.docker.internal:11434
 ```
 
 ### Development
@@ -86,16 +91,14 @@ Copy `.env.example` to `.env` if you want to change defaults. Everything is opti
 | Variable | Default | Purpose |
 |---|---|---|
 | `SERVER_ADDRESS` | `:8080` | Listen address. Use `0.0.0.0:8080` to reach it from other devices. |
-| `STORAGE` | `sqlite` | `sqlite` or `mongo`. |
 | `DATA_DIR` | `./data` | SQLite database and logs live here. |
-| `MONGO_URI`, `DATABASE_NAME` | — | For `STORAGE=mongo`. LocalMind 1.x data is migrated automatically. |
-| `DEFAULT_PROVIDER` | `ollama` | Provider created on first run only: `ollama`, `lmstudio`, `openai`, `anthropic`, `gemini`. |
+| `DEFAULT_PROVIDER` | — | Skip the setup screen by pre-creating a provider: `ollama`, `lmstudio`, `openai`, `anthropic`, `gemini`. |
 | `DEFAULT_PROVIDER_URL` | preset URL | Base URL for that provider. |
 | `DEFAULT_PROVIDER_KEY` | — | API key for that provider. |
 | `MODEL_NAME` | — | Default model for that provider. |
 | `USER_NAME` | `friend` | Your display name (editable in Settings). |
 | `LOG_LEVEL` | `info` | `debug`, `info`, `warn`, `error`. |
-| `OPEN_BROWSER` | `false` | Open the UI on start (`start.sh` sets it to `true`). |
+| `OPEN_BROWSER` | `false` | Open the UI on start (`start.sh` and `.env.example` set it to `true`). |
 | `CORS_ORIGINS` | — | Extra allowed browser origins, comma separated. |
 
 After the first run, providers are managed in the UI; environment defaults are not re-applied.
@@ -126,7 +129,7 @@ LocalMind/
 │   ├── api/                 HTTP handlers, routes, SSE streaming
 │   ├── services/            chat orchestration, settings, provider resolution, title generation
 │   ├── providers/           ollama, openai-compatible, anthropic, gemini, lmstudio
-│   ├── store/               Store interface + sqlite (default) and mongo backends
+│   ├── store/               Store interface + embedded SQLite backend
 │   ├── models/              shared data types
 │   └── web/                 embedded frontend build (backend/web/dist)
 ├── frontend/                React + Vite + MUI web UI (also a PWA)
@@ -139,7 +142,7 @@ The API is documented in [docs/API.md](docs/API.md) — handy if you want to scr
 
 ## Upgrading from LocalMind 1.x
 
-- MongoDB is no longer required. Set `STORAGE=mongo` (or keep `MONGO_URI` in your `.env`) to keep using your existing database; documents are migrated in place on first start.
+- MongoDB is gone. LocalMind 2.0 stores everything in an embedded SQLite file under `./data`; 1.x chat history is not carried over.
 - `ollama run` is no longer shelled out; the backend talks to Ollama's HTTP API. Make sure `ollama serve` is running.
 - `./start.sh --init` is gone: your profile and providers are set up in the app.
 - `USERNAME` in `.env` became `USER_NAME`.

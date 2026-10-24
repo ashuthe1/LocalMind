@@ -1,10 +1,9 @@
 // src/components/ChatHeader.jsx
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Popover, Select, MenuItem, FormControl, InputLabel, Autocomplete, TextField, Chip, Tooltip, IconButton, CircularProgress } from '@mui/material';
-import { ChevronDown, Settings, Cpu, ArrowLeft, Download } from 'lucide-react';
+import { Popover, Select, MenuItem, FormControl, InputLabel, Autocomplete, TextField, Chip, Tooltip, CircularProgress } from '@mui/material';
+import { ChevronDown, ArrowLeft } from 'lucide-react';
 import { api } from '../services/api';
 import { useProviderModels } from '../hooks/useProviderModels';
-import { useToast } from '../context/ToastContext';
 
 function ModelPicker({ providers, providerId, model, onChange, disabled }) {
   const [anchor, setAnchor] = useState(null);
@@ -21,7 +20,6 @@ function ModelPicker({ providers, providerId, model, onChange, disabled }) {
   return (
     <>
       <button className="model-picker-btn" onClick={(e) => setAnchor(e.currentTarget)} disabled={disabled} title={label}>
-        <Cpu size={15} />
         <span className="picker-text">{label}</span>
         <ChevronDown size={14} />
       </button>
@@ -103,20 +101,7 @@ function ModelPicker({ providers, providerId, model, onChange, disabled }) {
   );
 }
 
-export default function ChatHeader({
-  chat,
-  providers,
-  providerId,
-  model,
-  onChangeModel,
-  onOpenSettings,
-  onBack,
-  showBack,
-  onExport,
-  streaming,
-  connectionKey,
-}) {
-  const toast = useToast();
+export default function ChatHeader({ chat, providers, providerId, model, onChangeModel, onBack, showBack, streaming, connectionKey }) {
   const [conn, setConn] = useState({ state: 'idle', message: '' });
   const abortRef = useRef(null);
 
@@ -132,7 +117,7 @@ export default function ChatHeader({
     try {
       const r = await api.testProvider(providerId, controller.signal);
       if (controller.signal.aborted) return;
-      if (r?.ok) setConn({ state: 'ok', message: `${r.message || 'Connected'}${r.latencyMs != null ? ` · ${r.latencyMs} ms` : ''}${r.modelCount ? ` · ${r.modelCount} models` : ''}` });
+      if (r?.ok) setConn({ state: 'ok', message: r.message || 'Connected' });
       else setConn({ state: 'error', message: r?.error || r?.message || 'Provider unreachable' });
     } catch (err) {
       if (err?.name === 'AbortError') return;
@@ -145,46 +130,22 @@ export default function ChatHeader({
     return () => abortRef.current?.abort();
   }, [test, connectionKey]);
 
-  const chipColor = conn.state === 'ok' ? 'success' : conn.state === 'error' ? 'error' : 'default';
-  const chipLabel = conn.state === 'ok' ? 'Connected' : conn.state === 'error' ? 'Unreachable' : conn.state === 'none' ? 'No provider' : 'Checking…';
+  const label = conn.state === 'ok' ? 'Connected' : conn.state === 'error' ? 'Unreachable' : conn.state === 'none' ? 'No provider' : 'Checking…';
 
   return (
     <header className="chat-header">
       {showBack && (
-        <IconButton size="small" onClick={onBack} aria-label="Back to chats">
+        <button className="icon-btn" onClick={onBack} aria-label="Back to chats">
           <ArrowLeft size={20} />
-        </IconButton>
+        </button>
       )}
-      <div className="title">
-        {chat?.title || 'New chat'}
-        {chat && <span className="subtitle">{chat.messages?.length || 0} messages</span>}
-      </div>
+      <div className="title">{chat?.title || 'New chat'}</div>
       <ModelPicker providers={providers} providerId={providerId} model={model} onChange={onChangeModel} disabled={streaming} />
-      <Tooltip title={conn.message || 'Click to re-test'}>
-        <Chip
-          size="small"
-          color={chipColor}
-          variant={conn.state === 'ok' ? 'filled' : 'outlined'}
-          label={chipLabel}
-          onClick={() => {
-            test();
-            if (conn.state === 'error') toast.info('Re-testing provider connection…');
-          }}
-          icon={conn.state === 'checking' ? <CircularProgress size={12} color="inherit" /> : undefined}
-          sx={{ cursor: 'pointer' }}
-        />
-      </Tooltip>
-      {chat && (
-        <Tooltip title="Export as Markdown">
-          <IconButton size="small" onClick={() => onExport?.(chat, 'markdown')} aria-label="Export chat">
-            <Download size={18} />
-          </IconButton>
-        </Tooltip>
-      )}
-      <Tooltip title="Settings">
-        <IconButton size="small" onClick={onOpenSettings} aria-label="Open settings">
-          <Settings size={18} />
-        </IconButton>
+      <Tooltip title={`${conn.message || label} — click to re-check`}>
+        <button className={`conn-status ${conn.state}`} onClick={test} aria-label={`Provider status: ${label}`}>
+          <span className="dot" />
+          <span className="label">{label}</span>
+        </button>
       </Tooltip>
     </header>
   );
