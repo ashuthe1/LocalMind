@@ -1,83 +1,110 @@
-// config/config.go
-
+// Package config loads environment configuration.
 package config
 
 import (
-	"context"
-	"fmt"
-	"log"
 	"os"
 	"path/filepath"
-	"time"
+	"strconv"
+	"strings"
 
 	"github.com/joho/godotenv"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-var ModelName string
-var UserName string
-var UserId string
+// Version is the LocalMind release version.
+const Version = "2.0.0"
 
-// Config holds the configuration values.
+// Config holds all runtime configuration.
 type Config struct {
 	ServerAddress string
+	Storage       string // sqlite | mongo
+	DataDir       string
+	SQLitePath    string
 	MongoURI      string
 	DatabaseName  string
-	ModelName     string
-	UserName      string
+	FrontendDir   string // serve a built frontend from this directory instead of the embedded one
+	CORSOrigins   []string
+	LogLevel      string
+	RootDir       string // repository root (where .env lives)
+
+	// First-run bootstrap (used only when no provider is configured yet).
+	UserName        string
+	DefaultProvider string // provider type: ollama | openai | anthropic | gemini | lmstudio
+	DefaultBaseURL  string
+	DefaultAPIKey   string
+	DefaultModel    string
+	OpenBrowser     bool
 }
 
-func LoadConfig() *Config {
-	curDir, err := os.Getwd()
-	if err != nil {
-		log.Fatalf("Failed to get current directory: %v", err)
+// Load reads .env (from the working directory or its parent) and the environment.
+func Load() *Config {
+	cwd, _ := os.Getwd()
+	root := cwd
+	for _, candidate := range []string{filepath.Join(cwd, ".env"), filepath.Join(filepath.Dir(cwd), ".env")} {
+		if _, err := os.Stat(candidate); err == nil {
+			_ = godotenv.Load(candidate)
+			root = filepath.Dir(candidate)
+			break
+		}
+	}
+	if filepath.Base(cwd) == "backend" {
+		root = filepath.Dir(cwd)
 	}
 
-	envFilePath := filepath.Join(filepath.Dir(curDir), ".env")
-
-	err = godotenv.Load(envFilePath)
-	if err != nil {
-		log.Println("No .env file found or failed to load it. Continuing without environment variables or defaults.")
-		log.Println("Expecting .env file in this path: ", envFilePath)
+	cfg := &Config{
+		ServerAddress:   getEnv("SERVER_ADDRESS", ":8080"),
+		Storage:         strings.ToLower(getEnv("STORAGE", "")),
+		DataDir:         getEnv("DATA_DIR", filepath.Join(root, "data")),
+		MongoURI:        getEnv("MONGO_URI", ""),
+		DatabaseName:    getEnv("DATABASE_NAME", "LocalMind"),
+		FrontendDir:     getEnv("FRONTEND_DIR", ""),
+		LogLevel:        getEnv("LOG_LEVEL", "info"),
+		RootDir:         root,
+		UserName:        getEnv("USER_NAME", getEnv("LOCALMIND_USERNAME", "friend")),
+		DefaultProvider: strings.ToLower(getEnv("DEFAULT_PROVIDER", "")),
+		DefaultBaseURL:  getEnv("DEFAULT_PROVIDER_URL", getEnv("OLLAMA_URL", "")),
+		DefaultAPIKey:   getEnv("DEFAULT_PROVIDER_KEY", ""),
+		DefaultModel:    getEnv("MODEL_NAME", ""),
+		OpenBrowser:     getEnvBool("OPEN_BROWSER", false),
 	}
-
-	ModelName = getEnv("MODEL_NAME", "deepseek-r1:8b")
-	UserName = getEnv("USERNAME", "ashuthe1")
-
-	return &Config{
-		ServerAddress: getEnv("SERVER_ADDRESS", ":8080"),
-		MongoURI:      getEnv("MONGO_URI", "mongodb://localhost:27017"),
-		DatabaseName:  getEnv("DATABASE_NAME", "LocalMind"),
-		ModelName:     getEnv("MODEL_NAME", "deepseek-r1:8b"),
-		UserName:      getEnv("USERNAME", "ashuthe1"),
+	if cfg.Storage == "" {
+		if cfg.MongoURI != "" {
+			cfg.Storage = "mongo"
+		} else {
+			cfg.Storage = "sqlite"
+		}
 	}
+	if cfg.MongoURI == "" {
+		cfg.MongoURI = "mongodb://localhost:27017"
+	}
+	cfg.SQLitePath = getEnv("SQLITE_PATH", filepath.Join(cfg.DataDir, "localmind.db"))
+	if cfg.DefaultProvider == "" {
+		cfg.DefaultProvider = "ollama"
+	}
+	if origins := getEnv("CORS_ORIGINS", ""); origins != "" {
+		for _, o := range strings.Split(origins, ",") {
+			if o = strings.TrimSpace(o); o != "" {
+				cfg.CORSOrigins = append(cfg.CORSOrigins, o)
+			}
+		}
+	}
+	return cfg
 }
 
-// getEnv fetches the value of an environment variable or returns a default value.
-func getEnv(key, defaultValue string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
+func getEnv(key, def string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
 	}
-	return defaultValue
+	return def
 }
 
-// ConnectMongoDB establishes a connection to the MongoDB database.
-func ConnectMongoDB(uri string) (*mongo.Client, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	clientOptions := options.Client().ApplyURI(uri)
-	client, err := mongo.Connect(ctx, clientOptions)
+func getEnvBool(key string, def bool) bool {
+	v := os.Getenv(key)
+	if v == "" {
+		return def
+	}
+	b, err := strconv.ParseBool(v)
 	if err != nil {
-		return nil, err
+		return def
 	}
-
-	// Ping the database to verify the connection
-	if err := client.Ping(ctx, nil); err != nil {
-		return nil, err
-	}
-
-	fmt.Println("Connected to MongoDB!")
-	return client, nil
+	return b
 }

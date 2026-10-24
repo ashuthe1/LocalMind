@@ -1,206 +1,256 @@
-/* src/styles/App.css */
+/* src/styles/app.css — theme tokens and layout */
 :root {
-  --bg-color: #ffffff;
-  --header-bg: #f8f9fa;
-  --text-color: #333333;
-  --border-color: #e0e0e0;
-  --input-bg: #f5f5f5;
-  --form-bg: #ffffff;
   --primary-color: #3f51b5;
-  --shine-animation-duration: 3s;
-  /* Default box-shadow values */
-  --default-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  --hover-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+  --primary-rgb: 63, 81, 181;
+  --bg-color: #ffffff;
+  --surface-color: #f8f9fa;
+  --surface-2: #eef0f3;
+  --header-bg: #f8f9fa;
+  --text-color: #222222;
+  --text-muted: #6b7280;
+  --border-color: #e0e0e0;
+  --input-bg: #f3f4f6;
+  --form-bg: #ffffff;
+  --assistant-bubble: #f1f3f5;
+  --code-bg: #f6f8fa;
+  --default-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  --hover-shadow: 0 6px 16px rgba(0, 0, 0, 0.16);
+  --font-scale: 1;
+  --space: 1rem;
+  --bubble-pad: 0.9rem 1rem;
+  --radius: 14px;
 }
 
-.dark {
-  --bg-color: #1a1a1a;
-  --header-bg: #2d2d2d;
-  --text-color: #ffffff;
-  --border-color: #333333;
-  --input-bg: #2a2a2a;
-  --form-bg: #1f1f1f;
-  --primary-color: #7986cb;
-  /* For dark mode, you might want a slightly different shadow */
-  --default-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-  --hover-shadow: 0 6px 12px rgba(0, 0, 0, 0.5);
+:root[data-theme='dark'],
+.app.dark {
+  --bg-color: #141414;
+  --surface-color: #1f1f1f;
+  --surface-2: #2a2a2a;
+  --header-bg: #1f1f1f;
+  --text-color: #f3f4f6;
+  --text-muted: #9ca3af;
+  --border-color: #2f2f2f;
+  --input-bg: #262626;
+  --form-bg: #1a1a1a;
+  --assistant-bubble: #222222;
+  --code-bg: #1b1b1b;
+  --default-shadow: 0 2px 4px rgba(0, 0, 0, 0.35);
+  --hover-shadow: 0 6px 16px rgba(0, 0, 0, 0.55);
+}
+
+.app.compact {
+  --space: 0.6rem;
+  --bubble-pad: 0.55rem 0.75rem;
+  --radius: 10px;
 }
 
 .app {
   display: flex;
   flex-direction: column;
   height: 100vh;
+  height: 100dvh;
   background: var(--bg-color);
   color: var(--text-color);
-}
-
-.app-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem 2rem;
-  border-bottom: 1px solid var(--border-color);
-  background: var(--header-bg);
+  font-size: calc(1rem * var(--font-scale));
+  overflow: hidden;
 }
 
 .main-container {
   display: flex;
   flex: 1;
+  min-height: 0;
   overflow: hidden;
   position: relative;
 }
 
 .chat-container {
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  padding: 1rem;
+  background: var(--bg-color);
 }
 
 .messages-container {
   flex: 1;
   overflow-y: auto;
-  padding: 1rem;
+  padding: var(--space) calc(var(--space) * 1.5);
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: var(--space);
+  scroll-behavior: smooth;
 }
 
-/* -------------------------------
-   Message Form, Input & Button
---------------------------------- */
-.message-form {
+.messages-inner {
+  width: 100%;
+  max-width: 960px;
+  margin: 0 auto;
   display: flex;
-  gap: 1rem;
-  padding: 1rem;
-  border-top: 1px solid var(--border-color);
-  background: var(--form-bg);
-  position: relative;
+  flex-direction: column;
+  gap: var(--space);
 }
 
-/* Message Input with pulsing box-shadow by default */
-.message-input {
-  flex: 1;
-  padding: 0.8rem 0.8rem 0.8rem 40px;
-  border-radius: 25px;
-  border: 1px solid var(--border-color);
-  background: var(--input-bg);
-  color: var(--text-color);
-  font-size: 1rem;
-  transition: all 0.3s ease;
-  background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23999999"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg>');
-  background-repeat: no-repeat;
-  background-position: 12px center;
-  background-size: 20px;
-  position: relative;
+.scroll-to-bottom {
+  position: absolute;
+  right: 24px;
+  bottom: 110px;
+  z-index: 5;
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
   overflow: hidden;
-  /* box-shadow: var(--default-shadow); */
-  animation: pulseShadow 3s infinite;
-
-  box-shadow: var(--hover-shadow);
-  border-color: var(--primary-color);
-  /* Optionally, pause the pulsing animation on hover/focus */
-  /* animation-play-state: paused; */
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 
-/* .dark .message-input {
-  background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23ffffff"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg>');
-} */
-
-/* Increase box-shadow when hovered or focused */
-/* .message-input:hover,
-.message-input:focus {
-  box-shadow: var(--hover-shadow);
-  border-color: var(--primary-color);
-  /* Optionally, pause the pulsing animation on hover/focus */
-  /* animation-play-state: paused;
-} 
-*/
-
-/* Send Button with pulsing box-shadow and pointer cursor */
-.send-button {
-  padding: 0.8rem 1.5rem;
-  border-radius: 25px;
-  border: none;
-  background: var(--primary-color);
-  color: white;
-  cursor: pointer;
-  transition: transform 0.3s, background 0.3s, box-shadow 0.3s;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  position: relative;
-  overflow: hidden;
-  box-shadow: var(--default-shadow);
-  animation: pulseShadow 3s infinite;
+.muted {
+  color: var(--text-muted);
 }
 
-/* Scale and increase box-shadow on hover/focus */
-.send-button:hover,
-.send-button:focus {
-  transform: scale(1.05);
-  box-shadow: var(--hover-shadow);
-  animation-play-state: paused;
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-/* Reuse the same pulse animation for both elements */
-@keyframes pulseShadow {
-  0% {
-    box-shadow: var(--default-shadow);
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 1;
   }
   50% {
-    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
-  }
-  100% {
-    box-shadow: var(--default-shadow);
+    opacity: 0;
   }
 }
 
-/* Retain the existing shine overlay if needed (optional) */
-/* Remove or comment out the following if you prefer only the box-shadow pulse effect */
-/*
-.message-input:focus::before,
-.send-button::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -150%;
-  width: 150%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.5), transparent);
-  animation: shineEffect var(--shine-animation-duration) infinite;
-  pointer-events: none;
+/* Scrollbars */
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: rgba(128, 128, 128, 0.35);
+  border-radius: 4px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(128, 128, 128, 0.6);
 }
 
-@keyframes shineEffect {
-  0% { transform: translateX(-150%); }
-  100% { transform: translateX(150%); }
-}
-*/
-
-/* Disabled state */
-.send-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-/* Other styles remain unchanged */
-.floating-new-chat {
-  position: fixed !important;
-  bottom: 30px;
-  left: 260px;
-  z-index: 1000;
-  transition: transform 0.3s ease !important;
-}
-
-.floating-new-chat:hover {
-  transform: scale(1.1) !important;
-}
-
-.SettingBox {
+/* Connection banner */
+.connection-banner {
+  display: flex;
   align-items: center;
   justify-content: center;
-  width: 70%;
-  margin-left: 15%;
-  margin-right: 15%;
+  gap: 12px;
+  padding: 8px 16px;
+  background: #b45309;
+  color: #fff;
+  font-size: 0.9rem;
+  z-index: 20;
+}
+.connection-banner .spin {
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Empty state */
+.empty-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 2rem;
+  gap: 1rem;
+  animation: fadeIn 0.4s ease;
+}
+.empty-state .avatar {
+  width: 84px;
+  height: 84px;
+  border-radius: 28px;
+  display: grid;
+  place-items: center;
+  font-size: 2.4rem;
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.25), rgba(var(--primary-rgb), 0.05));
+  border: 1px solid rgba(var(--primary-rgb), 0.35);
+  box-shadow: var(--default-shadow);
+}
+.empty-state h2 {
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+.empty-state p {
+  max-width: 520px;
+  color: var(--text-muted);
+}
+.empty-state .hints {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 0.5rem;
+}
+.empty-state .hint {
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+.empty-state .suggestions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+  width: 100%;
+  max-width: 680px;
+}
+.empty-state .suggestion {
+  text-align: left;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border-color);
+  background: var(--surface-color);
+  color: var(--text-color);
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+.empty-state .suggestion:hover {
+  transform: translateY(-2px);
+  border-color: var(--primary-color);
+  box-shadow: var(--default-shadow);
+}
+kbd {
+  font-family: inherit;
+  font-size: 0.75rem;
+  padding: 1px 6px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: var(--surface-color);
+}
+
+@media (max-width: 767px) {
+  .messages-container {
+    padding: var(--space);
+  }
+  .scroll-to-bottom {
+    right: 12px;
+    bottom: 96px;
+  }
 }

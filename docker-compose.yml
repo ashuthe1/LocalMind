@@ -1,0 +1,25 @@
+# docker compose up -d        → LocalMind on http://localhost:8080 talking to Ollama in a sidecar.
+# Remove the ollama service (and point DEFAULT_PROVIDER_URL elsewhere) if you already run a model server.
+services:
+  localmind:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      DEFAULT_PROVIDER: ollama
+      DEFAULT_PROVIDER_URL: http://ollama:11434
+      MODEL_NAME: llama3.2
+    volumes:
+      - localmind-data:/data
+    depends_on:
+      - ollama
+
+  ollama:
+    image: ollama/ollama:latest
+    volumes:
+      - ollama-models:/root/.ollama
+    # Pull a model once: docker compose exec ollama ollama pull llama3.2
+
+volumes:
+  localmind-data:
+  ollama-models:

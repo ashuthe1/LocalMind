@@ -1,62 +1,57 @@
+// Package logger configures application logging (console + daily files).
 package logger
 
 import (
 	"fmt"
+	"io"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/sirupsen/logrus"
 )
 
-var Log *logrus.Logger
+// Log is the shared logger.
+var Log = logrus.New()
 
-func InitLogger() {
-	Log = logrus.New()
-	Log.SetFormatter(&logrus.JSONFormatter{})
-
-	// Create logs directory if not exists
-	if _, err := os.Stat("logs"); os.IsNotExist(err) {
-		os.Mkdir("logs", os.ModePerm)
-	}
-
-	// Set log file paths
-	date := time.Now().Format("2006-01-02") // YYYY-MM-DD
-	logFile, err := os.OpenFile(fmt.Sprintf("logs/%s-normal.log", date), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+// Init sets up console output plus daily JSON log files under dir.
+func Init(dir, level string) {
+	lvl, err := logrus.ParseLevel(level)
 	if err != nil {
-		Log.Fatalf("Failed to open log file: %v", err)
+		lvl = logrus.InfoLevel
 	}
+	Log.SetLevel(lvl)
+	Log.SetFormatter(&logrus.TextFormatter{FullTimestamp: true, TimestampFormat: "15:04:05"})
+	Log.SetOutput(os.Stdout)
 
-	errorFile, err := os.OpenFile(fmt.Sprintf("logs/%s-error.log", date), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	if dir == "" {
+		return
+	}
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		Log.Warnf("Could not create log directory %s: %v", dir, err)
+		return
+	}
+	date := time.Now().Format("2006-01-02")
+	file, err := os.OpenFile(filepath.Join(dir, fmt.Sprintf("%s.log", date)), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
 	if err != nil {
-		Log.Fatalf("Failed to open error log file: %v", err)
+		Log.Warnf("Could not open log file: %v", err)
+		return
 	}
-
-	// Log to multiple outputs
-	Log.SetOutput(logFile)
-	Log.SetLevel(logrus.InfoLevel)
-
-	// Separate error logs
-	errorLogger := logrus.New()
-	errorLogger.SetOutput(errorFile)
-	errorLogger.SetLevel(logrus.ErrorLevel)
-
-	// Hook to write errors to error log file
-	Log.AddHook(&ErrorHook{errorLogger})
+	fileLogger := logrus.New()
+	fileLogger.SetOutput(file)
+	fileLogger.SetFormatter(&logrus.JSONFormatter{})
+	fileLogger.SetLevel(lvl)
+	Log.AddHook(&teeHook{fileLogger})
+	_ = io.Discard
 }
 
-type ErrorHook struct {
-	ErrorLogger *logrus.Logger
-}
+type teeHook struct{ target *logrus.Logger }
 
-func (hook *ErrorHook) Levels() []logrus.Level {
-	return []logrus.Level{logrus.ErrorLevel, logrus.FatalLevel, logrus.PanicLevel}
-}
+func (h *teeHook) Levels() []logrus.Level { return logrus.AllLevels }
 
-func (hook *ErrorHook) Fire(entry *logrus.Entry) error {
-	line, err := entry.String()
-	if err != nil {
-		return err
-	}
-	hook.ErrorLogger.Out.Write([]byte(line))
+func (h *teeHook) Fire(entry *logrus.Entry) error {
+	e := h.target.WithFields(entry.Data)
+	e.Time = entry.Time
+	e.Log(entry.Level, entry.Message)
 	return nil
 }

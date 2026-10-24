@@ -1,81 +1,122 @@
+// Command server runs the LocalMind backend (API + embedded web UI).
 package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
+	"os/exec"
 	"os/signal"
+	"path/filepath"
+	"runtime"
+	"strings"
+	"syscall"
 	"time"
 
 	"github.com/ashuthe1/localmind/api"
 	"github.com/ashuthe1/localmind/config"
 	"github.com/ashuthe1/localmind/logger"
-	"github.com/ashuthe1/localmind/repository"
 	"github.com/ashuthe1/localmind/services"
+	"github.com/ashuthe1/localmind/store"
+	mongostore "github.com/ashuthe1/localmind/store/mongo"
+	sqlitestore "github.com/ashuthe1/localmind/store/sqlite"
+	"github.com/ashuthe1/localmind/web"
 )
 
 func main() {
-	// Initialize Logger
-	logger.InitLogger()
-	logger.Log.Info("Logger initialized successfully")
+	cfg := config.Load()
+	logger.Init(filepath.Join(cfg.DataDir, "logs"), cfg.LogLevel)
+	logger.Log.Infof("LocalMind %s starting (storage=%s)", config.Version, cfg.Storage)
 
-	cfg := config.LoadConfig()
-
-	// Connect to MongoDB
-	mongoClient, err := config.ConnectMongoDB(cfg.MongoURI)
+	st, err := openStore(cfg)
 	if err != nil {
-		logger.Log.Errorf("Failed to connect to MongoDB: %v", err)
-		os.Exit(1)
+		logger.Log.Fatalf("Could not open storage: %v", err)
 	}
-	defer func() {
-		if err := mongoClient.Disconnect(context.Background()); err != nil {
-			logger.Log.Errorf("Failed to disconnect MongoDB: %v", err)
-		}
-	}()
+	defer st.Close()
 
-	db := mongoClient.Database(cfg.DatabaseName)
-	chatRepo := repository.NewChatRepository(db)
-	userRepo := repository.NewUserRepository(db)
-	chatService := services.NewChatService(chatRepo)
-	ollamaService := services.NewOllamaService()
-	userService := services.NewUserService(userRepo)
-	handler := api.NewHandler(chatService, ollamaService, userService)
-	router := api.SetupRoutes(handler)
+	settingsSvc := services.NewSettingsService(st)
+	if err := settingsSvc.Bootstrap(context.Background(), cfg); err != nil {
+		logger.Log.Fatalf("Could not initialize settings: %v", err)
+	}
+	providerSvc := services.NewProviderService(settingsSvc)
+	chatSvc := services.NewChatService(st, settingsSvc, providerSvc)
+	handler := api.NewHandler(chatSvc, settingsSvc, providerSvc, st.Name())
+	router := api.SetupRoutes(handler, web.Handler(cfg.FrontendDir), cfg.CORSOrigins)
 
 	srv := &http.Server{
-		Addr:         cfg.ServerAddress,
-		WriteTimeout: 10 * time.Minute,
-		ReadTimeout:  10 * time.Minute,
-		IdleTimeout:  10 * time.Minute,
-		Handler:      router,
+		Addr:              cfg.ServerAddress,
+		Handler:           router,
+		ReadHeaderTimeout: 30 * time.Second,
+		IdleTimeout:       5 * time.Minute,
+		// No WriteTimeout: responses stream for as long as the model generates.
 	}
 
-	// Start Server
 	go func() {
-		fmt.Printf("Server is running on %s\n", cfg.ServerAddress)
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		url := displayURL(cfg.ServerAddress)
+		fmt.Printf("\n  LocalMind is running at %s\n  Storage: %s\n\n", url, describeStorage(cfg))
+		if cfg.OpenBrowser {
+			openBrowser(url)
+		}
+		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			logger.Log.Fatalf("Server failed: %v", err)
 		}
 	}()
 
-	// Graceful Shutdown
-	waitForShutdown(srv)
-}
-
-func waitForShutdown(srv *http.Server) {
 	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, os.Interrupt)
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
 	<-quit
-
-	logger.Log.Warn("Server is shutting down...")
-
+	logger.Log.Info("Shutting down…")
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
-
 	if err := srv.Shutdown(ctx); err != nil {
-		logger.Log.Errorf("Server forced to shutdown: %v", err)
+		logger.Log.Errorf("Forced shutdown: %v", err)
 	}
+	logger.Log.Info("Bye")
+}
 
-	logger.Log.Info("Server exited gracefully")
+func openStore(cfg *config.Config) (store.Store, error) {
+	switch cfg.Storage {
+	case "mongo", "mongodb":
+		return mongostore.Open(context.Background(), cfg.MongoURI, cfg.DatabaseName)
+	case "sqlite", "":
+		return sqlitestore.Open(cfg.SQLitePath)
+	default:
+		return nil, fmt.Errorf("unknown STORAGE %q (use sqlite or mongo)", cfg.Storage)
+	}
+}
+
+func describeStorage(cfg *config.Config) string {
+	if cfg.Storage == "mongo" || cfg.Storage == "mongodb" {
+		return "MongoDB (" + cfg.DatabaseName + ")"
+	}
+	return "SQLite (" + cfg.SQLitePath + ")"
+}
+
+func displayURL(addr string) string {
+	host, port, err := net.SplitHostPort(addr)
+	if err != nil {
+		return "http://localhost" + addr
+	}
+	if host == "" || host == "0.0.0.0" || host == "::" {
+		host = "localhost"
+	}
+	return "http://" + net.JoinHostPort(host, port)
+}
+
+func openBrowser(url string) {
+	var cmd *exec.Cmd
+	switch runtime.GOOS {
+	case "darwin":
+		cmd = exec.Command("open", url)
+	case "windows":
+		cmd = exec.Command("rundll32", "url.dll,FileProtocolHandler", url)
+	default:
+		cmd = exec.Command("xdg-open", url)
+	}
+	if err := cmd.Start(); err != nil && !strings.Contains(err.Error(), "not found") {
+		logger.Log.Debugf("could not open browser: %v", err)
+	}
 }

@@ -1,95 +1,57 @@
-source .env
+#!/usr/bin/env bash
+# LocalMind launcher.
+#   ./start.sh            build the UI once, then run the single Go binary (production mode)
+#   ./start.sh --dev      run the Vite dev server (hot reload) + the Go backend side by side
+#   ./start.sh --build    only build (frontend + backend binary at ./bin/localmind)
+set -euo pipefail
+cd "$(dirname "$0")"
 
-echo "🚀 Starting backend and frontend..."
+MODE="prod"
+case "${1:-}" in
+  --dev)   MODE="dev" ;;
+  --build) MODE="build" ;;
+  --init)  echo "ℹ️  --init is no longer needed: providers and your profile are set up in the app's Settings." ;;
+esac
 
-INIT=false
-
-# Check for --init flag
-if [[ "$1" == "--init" ]]; then
-  INIT=true
+if [ -f .env ]; then
+  set -a; # shellcheck disable=SC1091
+  source .env; set +a
 fi
 
-if [ -z "$USERNAME" ]; then
-  echo "⚠️ USERNAME not found in .env file! Using default 'guest'."
-  USERNAME="guest"
-fi
+command -v go >/dev/null   || { echo "❌ Go is required (https://go.dev/dl/)"; exit 1; }
+command -v npm >/dev/null  || { echo "❌ Node.js/npm is required (https://nodejs.org/)"; exit 1; }
 
-# Start Frontend (React + Vite)
-start_frontend() {
-  echo "🔄 Setting up frontend..."
-  cd frontend || { echo "❌ Frontend directory not found!"; exit 1; }
-
-  if [ ! -d "node_modules" ]; then
-    echo "📦 Installing dependencies (npm install)..."
-    npm install
-  fi
-
-  echo "🚀 Starting React frontend server..."
-  npm run dev &
-
-  cd ..
+build_frontend() {
+  echo "📦 Building the web UI…"
+  (cd frontend && { [ -d node_modules ] || npm install; } && npm run build)
 }
 
-# Start Backend (Go Server)
-start_backend() {
-  echo "🔄 Setting up backend..."
-  cd backend || { echo "❌ Backend directory not found!"; exit 1; }
-
-  echo "📦 Running 'go mod tidy'..."
-  go mod tidy
-
-  echo "🚀 Starting Go backend server..."
-  go run cmd/server/main.go &
-
-  cd ..
+build_backend() {
+  echo "🔧 Building the backend…"
+  mkdir -p bin
+  (cd backend && go build -o ../bin/localmind ./cmd/server)
 }
 
-# Initialize user and generate a message
-initialize() {
-  echo "🔄 Initializing user and generating a message..."
+PIDS=()
+cleanup() { for p in "${PIDS[@]:-}"; do kill "$p" 2>/dev/null || true; done; }
+trap cleanup EXIT INT TERM
 
-  # Wait a bit to ensure the backend is running
-  sleep 5  
-
-  echo "👤 Creating user: $USERNAME"
-  curl --location 'http://localhost:8080/api/create-user' \
-    --header 'Content-Type: application/json' \
-    --data "{
-      \"username\": \"$USERNAME\",
-      \"aboutMe\": \"\"
-    }" > /dev/null 2>&1
-
-  echo "💬 Sending initial message..."
-  curl --location 'http://localhost:8080/api/chat-init' \
-    --header 'Content-Type: application/json' \
-    --data "{
-      \"username\": \"$USERNAME\"
-    }" > /dev/null 2>&1
-
-  echo "📦 Initialization Setup Completed, App is running on port 5173 ツ"
-}
-
-launchBrowser() {
-  sleep 2
-  echo "🚀 Opening \033[32mhttp://localhost:5173\033[0m in the default web browser ツ"
-
-  # Open localhost:5173 in the default web browser
-  if command -v xdg-open > /dev/null; then
-    xdg-open http://localhost:5173  # Linux
-  elif command -v open > /dev/null; then
-    open http://localhost:5173  # macOS
-  else
-    echo "⚠️ Unable to open browser. Please open http://localhost:5173 manually."
-  fi
-}
-
-start_frontend
-start_backend
-
-if $INIT; then
-  initialize
-fi
-
-launchBrowser
-
-wait
+case "$MODE" in
+  build)
+    build_frontend; build_backend
+    echo "✅ Built ./bin/localmind (UI embedded). Run it from the repo root."
+    ;;
+  dev)
+    echo "🚀 Starting backend (go run) and Vite dev server…"
+    (cd backend && go run ./cmd/server) & PIDS+=($!)
+    (cd frontend && { [ -d node_modules ] || npm install; } && npm run dev) & PIDS+=($!)
+    sleep 2
+    echo "🌐 UI: http://localhost:5173   API: http://localhost:${SERVER_ADDRESS##*:}"
+    wait
+    ;;
+  prod)
+    build_frontend; build_backend
+    echo "🚀 Starting LocalMind…"
+    OPEN_BROWSER="${OPEN_BROWSER:-true}" exec ./bin/localmind
+    ;;
+esac

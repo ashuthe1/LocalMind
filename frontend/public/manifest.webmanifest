@@ -1,0 +1,13 @@
+{
+  "name": "LocalMind",
+  "short_name": "LocalMind",
+  "description": "Private chat UI for any LLM provider. Your data stays on your machine.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#1a1a1a",
+  "theme_color": "#1a1a1a",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

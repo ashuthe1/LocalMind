@@ -1,1 +1,8 @@
 .env
+data/
+*.log
+.DS_Store
+
+# Built frontend is embedded into the Go binary at build time
+backend/web/dist/*
+!backend/web/dist/.gitkeep

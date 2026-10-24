@@ -1,27 +1,26 @@
 {
-  "name": "frontend",
+  "name": "localmind-frontend",
   "private": true,
-  "version": "0.0.0",
+  "version": "2.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && node -e \"require('fs').writeFileSync('../backend/web/dist/.gitkeep','')\"",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "mock": "node scripts/mock-server.mjs",
+    "dev:mock": "node scripts/mock-server.mjs & vite"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
     "@mui/icons-material": "^6.4.2",
     "@mui/material": "^6.4.2",
-    "axios": "^1.7.9",
-    "date-fns": "^4.1.0",
     "lucide-react": "^0.474.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-markdown": "^9.0.3",
     "react-syntax-highlighter": "^15.6.1",
-    "rehype-raw": "^7.0.0",
     "remark-gfm": "^4.0.0"
   },
   "devDependencies": {

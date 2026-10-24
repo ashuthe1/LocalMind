@@ -1,370 +1,556 @@
-// api/handlers.go
-
+// Package api exposes the HTTP API described in docs/API.md.
 package api
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"log"
+	"io"
 	"net/http"
-	"sync"
+	"strings"
 	"time"
 
 	"github.com/ashuthe1/localmind/config"
 	"github.com/ashuthe1/localmind/logger"
 	"github.com/ashuthe1/localmind/models"
+	"github.com/ashuthe1/localmind/providers"
 	"github.com/ashuthe1/localmind/services"
+	"github.com/ashuthe1/localmind/store"
 	"github.com/gorilla/mux"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-var totalThreads = 0
+const maxBodyBytes = 64 << 20 // images are inlined as base64
 
+// Handler holds the service dependencies.
 type Handler struct {
-	ChatService   *services.ChatService
-	OllamaService *services.OllamaService
-	UserService   *services.UserService
+	Chats     *services.ChatService
+	Settings  *services.SettingsService
+	Providers *services.ProviderService
+	Storage   string
+	started   time.Time
 }
 
-// NewHandler creates a new Handler instance.
-func NewHandler(chatService *services.ChatService, ollamaService *services.OllamaService, userService *services.UserService) *Handler {
-	return &Handler{
-		ChatService:   chatService,
-		OllamaService: ollamaService,
-		UserService:   userService,
+func NewHandler(chats *services.ChatService, settings *services.SettingsService, prov *services.ProviderService, storageName string) *Handler {
+	return &Handler{Chats: chats, Settings: settings, Providers: prov, Storage: storageName, started: time.Now()}
+}
+
+// ---------- helpers ----------
+
+func writeJSON(w http.ResponseWriter, status int, v any) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(status)
+	if v != nil {
+		_ = json.NewEncoder(w).Encode(v)
 	}
 }
 
-func (h *Handler) CreateDefaultMessage(w http.ResponseWriter, r *http.Request) {
-
-	username := config.UserName
-	chat, err := h.ChatService.CreateChat("Greet User")
-	if err != nil {
-		log.Println("Error creating new chat:", err)
-		http.Error(w, "Failed to create chat", http.StatusInternalServerError)
-		return
-	}
-	chatID := chat.ID
-	chatContent := fmt.Sprintf("Hi %v, it's a pleasure to meet you!\n I'm Smriti, an AI chatbot running completely locally on your system with no external dependencies.", username)
-	userMessage := models.Message{
-		ID:        primitive.NewObjectID(),
-		Role:      "assistant",
-		Content:   chatContent,
-		Timestamp: time.Now(),
-	}
-
-	if err := h.ChatService.AddMessage(chatID, userMessage); err != nil {
-		logger.Log.Errorf("Error adding default message: %v", err)
-		http.Error(w, "Failed to add default message", http.StatusInternalServerError)
-		return
-	}
-
-	// // Respond with success
-	// w.Header().Set("Content-Type", "application/json")
-	// w.WriteHeader(http.StatusCreated)
-	// json.NewEncoder(w).Encode(map[string]string{
-	// 	"status":  "success",
-	// 	"message": "Intialized the conversation!",
-	// })
+func writeError(w http.ResponseWriter, status int, msg string) {
+	writeJSON(w, status, map[string]string{"error": msg})
 }
 
-func (h *Handler) GenerateTitleForChat(prompt string) string {
-	query := fmt.Sprintf("Give me less than 2 words title for this prompt message: %v", prompt)
-	title, err := h.OllamaService.GenerateResponse(query, config.ModelName)
-	if err != nil {
-		return "New Chat"
+// writeServiceError maps service/store errors to HTTP statuses.
+func writeServiceError(w http.ResponseWriter, err error) {
+	switch {
+	case errors.Is(err, store.ErrNotFound):
+		writeError(w, http.StatusNotFound, "not found")
+	case errors.Is(err, services.ErrValidation):
+		writeError(w, http.StatusBadRequest, strings.TrimPrefix(err.Error(), services.ErrValidation.Error()+": "))
+	case errors.Is(err, services.ErrNoProvider):
+		writeError(w, http.StatusPreconditionFailed, err.Error())
+	default:
+		logger.Log.Errorf("request failed: %v", err)
+		writeError(w, http.StatusInternalServerError, err.Error())
 	}
-	return title
 }
 
-func (h *Handler) SendMessageHandler(w http.ResponseWriter, r *http.Request) {
-	var req struct {
-		Message string `json:"message"`
-		ChatID  string `json:"chatId,omitempty"`
-	}
-
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		logger.Log.Errorf("Invalid payload %v", err)
-		http.Error(w, "Invalid payload", http.StatusBadRequest)
-		return
-	}
-
-	if req.Message == "" {
-		logger.Log.Errorf("User Prompt is required")
-		http.Error(w, "User Prompt is required", http.StatusBadRequest)
-		return
-	}
-
-	var chatID primitive.ObjectID
-	var err error
-	if req.ChatID == "" {
-		// title := h.GenerateTitleForChat(req.Message)
-		title := "New Chat"
-		chat, err := h.ChatService.CreateChat(title)
-		if err != nil {
-			logger.Log.Errorf("Error creating new chat: %v", err)
-			http.Error(w, "Failed to create chat", http.StatusInternalServerError)
-			return
-		}
-		chatID = chat.ID
-	} else {
-		chatID, err = primitive.ObjectIDFromHex(req.ChatID)
-		if err != nil {
-			logger.Log.Errorf("Invalid chat ID: %v", err)
-			http.Error(w, "Invalid chat ID", http.StatusBadRequest)
-			return
-		}
-	}
-
-	// Store the user message
-	userMessage := models.Message{
-		ID:        primitive.NewObjectID(),
-		Role:      "user",
-		Content:   req.Message,
-		Timestamp: time.Now(),
-	}
-	if err := h.ChatService.AddMessage(chatID, userMessage); err != nil {
-		logger.Log.Errorf("Error adding user message: %v", err)
-		http.Error(w, "Failed to add user message", http.StatusInternalServerError)
-		return
-	}
-
-	// Setup SSE headers
-	w.Header().Set("Content-Type", "text/event-stream")
-	w.Header().Set("Cache-Control", "no-cache")
-	w.Header().Set("Connection", "keep-alive")
-	w.Header().Set("Keep-Alive", "timeout=600, max=100")
-
-	flusher, ok := w.(http.Flusher)
-	if !ok {
-		logger.Log.Error("Streaming unsupported")
-		http.Error(w, "Streaming unsupported!", http.StatusInternalServerError)
-		return
-	}
-
-	ctx := r.Context()
-	doneCh := make(chan struct{})
-	var once sync.Once // Ensure doneCh is only closed once
-
-	// Goroutine to detect client disconnection
-	go func() {
-		<-ctx.Done()
-		once.Do(func() {
-			logger.Log.Println("Client disconnected, stopping SSE stream...")
-			close(doneCh)
-		})
-	}()
-
-	// Start heartbeat to keep connection alive
-	heartbeatTicker := time.NewTicker(1 * time.Second) // More frequent heartbeats
-	defer heartbeatTicker.Stop()
-
-	assistantResponse := ""
-
-	// Goroutine to send heartbeats
-	go func() {
-		for {
-			select {
-			case <-heartbeatTicker.C:
-				if _, err := w.Write([]byte("data: \n\n")); err != nil {
-					logger.Log.Printf("Error sending heartbeat: %v", err)
-					once.Do(func() { close(doneCh) }) // Ensure doneCh is closed only once
-					return
-				}
-				flusher.Flush()
-			case <-doneCh:
-				return
-			}
-		}
-	}()
-
-	// Callback function to send streamed data
-	sendChunk := func(chunk string) error {
-		select {
-		case <-doneCh:
-			return fmt.Errorf("client disconnected")
-		default:
-			_, err := w.Write([]byte("data: " + chunk + "\n\n"))
-			if err != nil {
-				logger.Log.Println("Error sending chunk:", err)
-				once.Do(func() { close(doneCh) }) // Ensure doneCh is closed only once
-				return err
-			}
-			flusher.Flush()
-			assistantResponse += chunk
+func decode(r *http.Request, v any) error {
+	r.Body = http.MaxBytesReader(nil, r.Body, maxBodyBytes)
+	dec := json.NewDecoder(r.Body)
+	if err := dec.Decode(v); err != nil {
+		if errors.Is(err, io.EOF) {
 			return nil
 		}
+		return fmt.Errorf("invalid JSON body: %w", err)
 	}
-
-	// Update: Generate User Aware Prompt
-	finalPrompt := h.UserService.UserRepo.GenerateUserAwarePrompt(req.Message)
-
-	// Stream response from Ollama
-	err = h.OllamaService.StreamResponse(finalPrompt, config.ModelName, sendChunk)
-
-	if err != nil {
-		logger.Log.Errorf("Error streaming response from LLM: %v", err)
-		sendChunk("[ERROR] Failed to complete response.")
-	}
-
-	// Save assistant's response only if streaming was successful
-	if assistantResponse != "" {
-		assistantMessage := models.Message{
-			ID:        primitive.NewObjectID(),
-			Role:      "assistant",
-			Content:   assistantResponse,
-			Timestamp: time.Now(),
-		}
-		if err := h.ChatService.AddMessage(chatID, assistantMessage); err != nil {
-			logger.Log.Errorf("Error adding assistant message: %v", err)
-		}
-	}
-
-	_, _ = w.Write([]byte("event: complete\ndata: done\n\n"))
-	flusher.Flush()
+	return nil
 }
 
-// GetChatsHandler retrieves all chats.
-func (h *Handler) GetChatsHandler(w http.ResponseWriter, r *http.Request) {
-	chats, err := h.ChatService.GetAllChats()
+// ---------- health ----------
+
+func (h *Handler) Health(w http.ResponseWriter, r *http.Request) {
+	resp := map[string]any{
+		"status":         "ok",
+		"version":        config.Version,
+		"storage":        h.Storage,
+		"uptimeSeconds":  int(time.Since(h.started).Seconds()),
+		"activeProvider": nil,
+	}
+	if settings, err := h.Settings.Get(r.Context()); err == nil && settings.ActiveProviderID != "" {
+		if p := settings.FindProvider(settings.ActiveProviderID); p != nil {
+			model := settings.ActiveModel
+			if model == "" {
+				model = p.DefaultModel
+			}
+			resp["activeProvider"] = map[string]string{"id": p.ID, "name": p.Name, "type": p.Type, "model": model}
+		}
+	}
+	writeJSON(w, http.StatusOK, resp)
+}
+
+// ---------- settings ----------
+
+func (h *Handler) GetSettings(w http.ResponseWriter, r *http.Request) {
+	settings, err := h.Settings.Get(r.Context())
 	if err != nil {
-		http.Error(w, "Failed to retrieve chats", http.StatusInternalServerError)
+		writeServiceError(w, err)
 		return
 	}
-
-	totalThreads = len(chats)
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(chats)
+	writeJSON(w, http.StatusOK, settings.Masked())
 }
 
-// DeleteChatHandler deletes a chat by ID.
-func (h *Handler) DeleteChatHandler(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) UpdateSettings(w http.ResponseWriter, r *http.Request) {
+	var patch map[string]json.RawMessage
+	if err := decode(r, &patch); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	settings, err := h.Settings.Update(r.Context(), patch)
+	if err != nil {
+		writeServiceError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, settings.Masked())
+}
+
+// ---------- providers ----------
+
+func (h *Handler) ProviderCatalog(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, http.StatusOK, map[string]any{"types": providers.Types(), "presets": providers.Presets()})
+}
+
+func (h *Handler) ListProviders(w http.ResponseWriter, r *http.Request) {
+	settings, err := h.Settings.Get(r.Context())
+	if err != nil {
+		writeServiceError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, settings.Masked().Providers)
+}
+
+func (h *Handler) CreateProvider(w http.ResponseWriter, r *http.Request) {
+	var cfg models.ProviderConfig
+	if err := decode(r, &cfg); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	created, err := h.Settings.AddProvider(r.Context(), cfg)
+	if err != nil {
+		writeServiceError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusCreated, created.Masked())
+}
+
+func (h *Handler) UpdateProvider(w http.ResponseWriter, r *http.Request) {
+	var raw map[string]json.RawMessage
+	if err := decode(r, &raw); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	var cfg models.ProviderConfig
+	body, _ := json.Marshal(raw)
+	if err := json.Unmarshal(body, &cfg); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid provider payload: "+err.Error())
+		return
+	}
+	_, enabledProvided := raw["enabled"]
+	updated, err := h.Settings.UpdateProvider(r.Context(), mux.Vars(r)["id"], cfg, enabledProvided)
+	if err != nil {
+		writeServiceError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, updated.Masked())
+}
+
+func (h *Handler) DeleteProvider(w http.ResponseWriter, r *http.Request) {
+	if err := h.Settings.DeleteProvider(r.Context(), mux.Vars(r)["id"]); err != nil {
+		writeServiceError(w, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *Handler) providerByID(r *http.Request) (*models.ProviderConfig, error) {
+	settings, err := h.Settings.Get(r.Context())
+	if err != nil {
+		return nil, err
+	}
+	p := settings.FindProvider(mux.Vars(r)["id"])
+	if p == nil {
+		return nil, store.ErrNotFound
+	}
+	return p, nil
+}
+
+func (h *Handler) ProviderModels(w http.ResponseWriter, r *http.Request) {
+	p, err := h.providerByID(r)
+	if err != nil {
+		writeServiceError(w, err)
+		return
+	}
+	list, err := h.Providers.ListModels(r.Context(), *p)
+	if err != nil {
+		writeError(w, http.StatusBadGateway, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, list)
+}
+
+func (h *Handler) TestProvider(w http.ResponseWriter, r *http.Request) {
+	p, err := h.providerByID(r)
+	if err != nil {
+		writeServiceError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, h.Providers.Test(r.Context(), *p))
+}
+
+func (h *Handler) TestUnsavedProvider(w http.ResponseWriter, r *http.Request) {
+	var cfg models.ProviderConfig
+	if err := decode(r, &cfg); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	cfg = h.Providers.WithStoredKey(r.Context(), cfg)
+	if cfg.BaseURL == "" {
+		for _, p := range providers.Presets() {
+			if p.ID == cfg.Type {
+				cfg.BaseURL = p.BaseURL
+			}
+		}
+	}
+	if strings.Contains(r.URL.RawQuery, "models") {
+		list, err := h.Providers.ListModels(r.Context(), cfg)
+		if err != nil {
+			writeError(w, http.StatusBadGateway, err.Error())
+			return
+		}
+		writeJSON(w, http.StatusOK, list)
+		return
+	}
+	writeJSON(w, http.StatusOK, h.Providers.Test(r.Context(), cfg))
+}
+
+// ---------- user ----------
+
+func (h *Handler) GetUser(w http.ResponseWriter, r *http.Request) {
+	u, err := h.Settings.GetUser(r.Context())
+	if err != nil {
+		writeServiceError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, u)
+}
+
+func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
+	var in struct {
+		Username    *string `json:"username"`
+		AboutMe     *string `json:"aboutMe"`
+		Preferences *string `json:"preferences"`
+	}
+	if err := decode(r, &in); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	u, err := h.Settings.UpdateUser(r.Context(), in.Username, in.AboutMe, in.Preferences)
+	if err != nil {
+		writeServiceError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, u)
+}
+
+// ---------- chats ----------
+
+func (h *Handler) ListChats(w http.ResponseWriter, r *http.Request) {
+	chats, err := h.Chats.List(r.Context(), r.URL.Query().Get("q"))
+	if err != nil {
+		writeServiceError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, chats)
+}
+
+func (h *Handler) CreateChat(w http.ResponseWriter, r *http.Request) {
+	var in services.CreateInput
+	if err := decode(r, &in); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	chat, err := h.Chats.Create(r.Context(), in)
+	if err != nil {
+		writeServiceError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusCreated, chat)
+}
+
+func (h *Handler) GetChat(w http.ResponseWriter, r *http.Request) {
+	chat, err := h.Chats.Get(r.Context(), mux.Vars(r)["id"])
+	if err != nil {
+		writeServiceError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, chat)
+}
+
+func (h *Handler) PatchChat(w http.ResponseWriter, r *http.Request) {
+	var in services.PatchInput
+	if err := decode(r, &in); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	chat, err := h.Chats.Patch(r.Context(), mux.Vars(r)["id"], in)
+	if err != nil {
+		writeServiceError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, chat)
+}
+
+func (h *Handler) DeleteChat(w http.ResponseWriter, r *http.Request) {
+	if err := h.Chats.Delete(r.Context(), mux.Vars(r)["id"]); err != nil {
+		writeServiceError(w, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *Handler) DeleteAllChats(w http.ResponseWriter, r *http.Request) {
+	if err := h.Chats.DeleteAll(r.Context()); err != nil {
+		writeServiceError(w, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *Handler) ExportChat(w http.ResponseWriter, r *http.Request) {
+	id := mux.Vars(r)["id"]
+	format := r.URL.Query().Get("format")
+	if format == "json" {
+		data, name, err := h.Chats.ExportJSON(r.Context(), id)
+		if err != nil {
+			writeServiceError(w, err)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", name))
+		_, _ = w.Write(data)
+		return
+	}
+	assistant := ""
+	if settings, err := h.Settings.Get(r.Context()); err == nil {
+		assistant = settings.Assistant.Name
+	}
+	md, name, err := h.Chats.ExportMarkdown(r.Context(), id, assistant)
+	if err != nil {
+		writeServiceError(w, err)
+		return
+	}
+	w.Header().Set("Content-Type", "text/markdown; charset=utf-8")
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", name))
+	_, _ = io.WriteString(w, md)
+}
+
+func (h *Handler) UpdateMessage(w http.ResponseWriter, r *http.Request) {
+	var in struct {
+		Content       string `json:"content"`
+		TruncateAfter bool   `json:"truncateAfter"`
+	}
+	if err := decode(r, &in); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
 	vars := mux.Vars(r)
-	chatIDHex := vars["id"]
-
-	chatID, err := primitive.ObjectIDFromHex(chatIDHex)
+	chat, err := h.Chats.UpdateMessage(r.Context(), vars["id"], vars["mid"], in.Content, in.TruncateAfter)
 	if err != nil {
-		http.Error(w, "Invalid chat ID", http.StatusBadRequest)
+		writeServiceError(w, err)
 		return
 	}
-
-	if err := h.ChatService.DeleteChat(chatID); err != nil {
-		http.Error(w, "Failed to delete chat", http.StatusInternalServerError)
-		return
-	}
-
-	if totalThreads == 1 {
-		h.CreateDefaultMessage(w, r)
-	}
-
-	w.WriteHeader(http.StatusNoContent)
+	writeJSON(w, http.StatusOK, chat)
 }
 
-// DeleteAllChatsHandler deletes all chats.
-func (h *Handler) DeleteAllChatsHandler(w http.ResponseWriter, r *http.Request) {
-	if err := h.ChatService.DeleteAllChats(); err != nil {
-		http.Error(w, "Failed to delete all chats", http.StatusInternalServerError)
+func (h *Handler) DeleteMessage(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	cascade := r.URL.Query().Get("cascade") == "true"
+	chat, err := h.Chats.DeleteMessage(r.Context(), vars["id"], vars["mid"], cascade)
+	if err != nil {
+		writeServiceError(w, err)
 		return
 	}
-
-	h.CreateDefaultMessage(w, r)
-
-	w.WriteHeader(http.StatusNoContent)
+	writeJSON(w, http.StatusOK, chat)
 }
 
-func (h *Handler) GetUserSettingsHandler(w http.ResponseWriter, r *http.Request) {
-	// Expecting a query parameter: /api/user?userId=<user-id>
-	userID := r.URL.Query().Get("userId")
-	if userID == "" {
-		userID = config.UserName
-	}
+// ---------- streaming ----------
 
-	user, err := h.UserService.UserRepo.GetUserByUsername(userID)
+// streamErrorBeforeStart reports failures that happen before any SSE byte was written.
+func (h *Handler) stream(w http.ResponseWriter, r *http.Request, run func(ctx context.Context, sink services.Sink) error) {
+	// Validate up-front errors with a plain JSON response, which is far easier for clients to handle.
+	sse, err := newSSEWriter(w)
 	if err != nil {
-		http.Error(w, "User not found", http.StatusNotFound)
+		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(user)
+	defer sse.Close()
+	if err := run(r.Context(), sse); err != nil && !errors.Is(err, errClientGone) {
+		if r.Context().Err() != nil {
+			return
+		}
+		msg := err.Error()
+		if errors.Is(err, services.ErrValidation) {
+			msg = strings.TrimPrefix(msg, services.ErrValidation.Error()+": ")
+		}
+		if errors.Is(err, store.ErrNotFound) {
+			msg = "chat or message not found"
+		}
+		_ = sse.Emit("error", map[string]string{"message": msg})
+		_ = sse.Emit("done", map[string]any{"message": nil, "chat": nil})
+	}
 }
 
-// CreateUserHandler handles user creation
-func (h *Handler) CreateUserHandler(w http.ResponseWriter, r *http.Request) {
-	var req struct {
-		Username string `json:"username"`
-		AboutMe  string `json:"aboutMe"`
-	}
-
-	// Decode JSON request
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid payload", http.StatusBadRequest)
+func (h *Handler) SendMessage(w http.ResponseWriter, r *http.Request) {
+	var in services.SendInput
+	if err := decode(r, &in); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-
-	if req.Username == "" {
-		req.Username = config.UserName
-	}
-
-	// Check if user already exists
-	existingUser, err := h.UserService.UserRepo.GetUserByUsername(req.Username)
-	if err == nil && existingUser != nil {
-		http.Error(w, "Username already exists", http.StatusConflict)
+	if strings.TrimSpace(in.Content) == "" && strings.TrimSpace(in.Message) == "" && len(in.Images) == 0 {
+		writeError(w, http.StatusBadRequest, "message content is required")
 		return
 	}
-
-	// Create a new user model
-	user := models.User{
-		ID:        primitive.NewObjectID(),
-		Username:  req.Username,
-		AboutMe:   req.AboutMe,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+	// Resolve the provider before switching to SSE so configuration errors come back as JSON.
+	var chat *models.Chat
+	if in.ChatID != "" {
+		c, err := h.Chats.Get(r.Context(), in.ChatID)
+		if err != nil {
+			writeServiceError(w, err)
+			return
+		}
+		chat = c
 	}
-
-	// Insert user into database
-	err = h.UserService.UserRepo.CreateUser(&user)
-	if err != nil {
-		http.Error(w, "Failed to create user", http.StatusInternalServerError)
+	if _, err := h.Providers.Resolve(r.Context(), chat, in.ProviderID, in.Model); err != nil {
+		writeServiceError(w, err)
 		return
 	}
-
-	// Respond with success
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(map[string]string{
-		"status":   "success",
-		"message":  "User created successfully",
-		"userId":   user.ID.Hex(),
-		"username": user.Username,
+	h.stream(w, r, func(ctx context.Context, sink services.Sink) error {
+		return h.Chats.Send(ctx, in, sink)
 	})
 }
 
-func (h *Handler) UpdateUserSettingsHandler(w http.ResponseWriter, r *http.Request) {
-	var req struct {
-		UserName    string `json:"username"`
-		AboutMe     string `json:"aboutMe"`
-		Preferences string `json:"preferences"`
-	}
-
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid payload", http.StatusBadRequest)
+func (h *Handler) Regenerate(w http.ResponseWriter, r *http.Request) {
+	var in services.RegenerateInput
+	if err := decode(r, &in); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-
-	if req.UserName == "" {
-		req.UserName = config.UserName
-	}
-
-	// Directly overwrite values instead of appending
-	err := h.UserService.UpdateUserSettings(req.UserName, req.AboutMe, req.Preferences)
+	id := mux.Vars(r)["id"]
+	chat, err := h.Chats.Get(r.Context(), id)
 	if err != nil {
-		http.Error(w, "Failed to update user settings", http.StatusInternalServerError)
+		writeServiceError(w, err)
 		return
 	}
+	if _, err := h.Providers.Resolve(r.Context(), chat, in.ProviderID, in.Model); err != nil {
+		writeServiceError(w, err)
+		return
+	}
+	h.stream(w, r, func(ctx context.Context, sink services.Sink) error {
+		return h.Chats.Regenerate(ctx, id, in, sink)
+	})
+}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{"status": "success"})
+// ---------- data ----------
+
+func (h *Handler) ExportAll(w http.ResponseWriter, r *http.Request) {
+	backup, err := h.Chats.ExportAll(r.Context(), config.Version)
+	if err != nil {
+		writeServiceError(w, err)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", "localmind-backup-"+time.Now().Format("2006-01-02")+".json"))
+	enc := json.NewEncoder(w)
+	enc.SetIndent("", "  ")
+	_ = enc.Encode(backup)
+}
+
+func (h *Handler) ImportAll(w http.ResponseWriter, r *http.Request) {
+	var backup services.Backup
+	if err := decode(r, &backup); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	n, err := h.Chats.ImportAll(r.Context(), &backup)
+	if err != nil {
+		writeServiceError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]int{"chatsImported": n})
+}
+
+// ---------- legacy ----------
+
+// LegacyCreateUser keeps `start.sh --init` from older versions working.
+func (h *Handler) LegacyCreateUser(w http.ResponseWriter, r *http.Request) {
+	var in struct {
+		Username string `json:"username"`
+		AboutMe  string `json:"aboutMe"`
+	}
+	_ = decode(r, &in)
+	var username, about *string
+	if strings.TrimSpace(in.Username) != "" {
+		username = &in.Username
+	}
+	if in.AboutMe != "" {
+		about = &in.AboutMe
+	}
+	u, err := h.Settings.UpdateUser(r.Context(), username, about, nil)
+	if err != nil {
+		writeServiceError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"status": "success", "userId": u.ID, "username": u.Username})
+}
+
+// LegacyChatInit creates a welcome chat if there are no chats yet.
+func (h *Handler) LegacyChatInit(w http.ResponseWriter, r *http.Request) {
+	chats, err := h.Chats.List(r.Context(), "")
+	if err != nil {
+		writeServiceError(w, err)
+		return
+	}
+	if len(chats) > 0 {
+		writeJSON(w, http.StatusOK, map[string]string{"status": "exists"})
+		return
+	}
+	settings, _ := h.Settings.Get(r.Context())
+	user, _ := h.Settings.GetUser(r.Context())
+	name, who := "your assistant", "there"
+	if settings != nil && settings.Assistant.Name != "" {
+		name = settings.Assistant.Name
+	}
+	if user != nil && user.Username != "" {
+		who = user.Username
+	}
+	chat, err := h.Chats.Create(r.Context(), services.CreateInput{Title: "Welcome"})
+	if err != nil {
+		writeServiceError(w, err)
+		return
+	}
+	greeting := fmt.Sprintf("Hi %s, it's a pleasure to meet you! I'm %s. Everything you type here stays on your machine. Pick a provider and model in Settings and let's talk.", who, name)
+	if _, err := h.Chats.AppendAssistantMessage(r.Context(), chat.ID, greeting); err != nil {
+		writeServiceError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusCreated, map[string]string{"status": "success", "chatId": chat.ID})
 }

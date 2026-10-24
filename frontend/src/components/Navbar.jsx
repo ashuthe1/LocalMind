@@ -1,55 +1,38 @@
 // src/components/Navbar.jsx
-import React from 'react';
-import { MessageCircle, Settings, Sun, Moon, ShieldCheck } from 'lucide-react';
-<ShieldCheck />
+import { MessageCircle, Settings, Sun, Moon, ShieldCheck, Menu as MenuIcon } from 'lucide-react';
+import { Tooltip } from '@mui/material';
 import '../styles/Navbar.css';
 
-const Navbar = ({ darkMode, toggleTheme, activeView, setActiveView }) => {
+export default function Navbar({ view, isDark, onToggleTheme, onOpenChat, onOpenSettings, onOpenDrawer, showDrawerButton }) {
   return (
-    <nav className="navbar">
-      {/* Animated background gradient for the entire navbar */}
-      <div className="navbar-background-animation"></div>
-
-      <button
-          onClick={() => setActiveView('chat')}
-          className={`navbar-btn ${activeView === 'chat' ? 'active' : ''} navLeft`}
-        >
-          <ShieldCheck size={20} />
-          <span>LocalMind✨</span>
-      </button>
-
+    <nav className="navbar" aria-label="Main navigation">
+      <div className="navbar-background-animation" />
+      <div className="navbar-left">
+        {showDrawerButton && (
+          <button className="navbar-btn icon-only" onClick={onOpenDrawer} aria-label="Open chat list">
+            <MenuIcon size={20} />
+          </button>
+        )}
+        <button className="navbar-btn brand" onClick={onOpenChat} aria-label="LocalMind home">
+          <ShieldCheck size={22} className="brand-icon" />
+          <span>LocalMind</span>
+        </button>
+      </div>
       <div className="navbar-buttons">
-
-
-      {/* <button
-          onClick={() => setActiveView('chat')}
-          className={`navbar-btn ${activeView === 'chat' ? 'active' : ''}`}
-        >
-          <ShieldCheck size={40} />
-          <span>LocalMind✨</span>
-      </button> */}
-
-        <button
-          onClick={() => setActiveView('chat')}
-          className={`navbar-btn ${activeView === 'chat' ? 'active' : ''}`}
-        >
-          <MessageCircle size={20} />
-          <span>Chat</span>
+        <button className={`navbar-btn ${view === 'chat' ? 'active' : ''}`} onClick={onOpenChat}>
+          <MessageCircle size={18} />
+          <span className="label">Chat</span>
         </button>
-        <button
-          onClick={() => setActiveView('settings')}
-          className={`navbar-btn ${activeView === 'settings' ? 'active' : ''}`}
-        >
-          <Settings size={20} />
-          <span>Settings</span>
+        <button className={`navbar-btn ${view === 'settings' ? 'active' : ''}`} onClick={onOpenSettings}>
+          <Settings size={18} />
+          <span className="label">Settings</span>
         </button>
-        <button onClick={toggleTheme} className="navbar-btn">
-          {darkMode ? <Sun size={20} /> : <Moon size={20} />}
-        </button>
-
+        <Tooltip title={isDark ? 'Switch to light theme' : 'Switch to dark theme'}>
+          <button className="navbar-btn icon-only" onClick={onToggleTheme} aria-label="Toggle theme">
+            {isDark ? <Sun size={18} /> : <Moon size={18} />}
+          </button>
+        </Tooltip>
       </div>
     </nav>
   );
-};
-
-export default Navbar;
+}
